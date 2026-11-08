@@ -1,0 +1,21 @@
+# Segredos e configurações locais do Streamlit (API Keys)
+.streamlit/secrets.toml
+
+# Cache e arquivos compilados do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ambientes virtuais locais
+venv/
+.venv/
+env/
+
+# Variáveis de ambiente gerais
+.env
+
+# Arquivos de sistema e IDEs
+.DS_Store
+.vscode/
+.idea/

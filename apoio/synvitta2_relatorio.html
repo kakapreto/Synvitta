@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="application-name" content="synvitta2"><title>Synvitta2 - Simulação detalhada</title>
+<style>
+:root{--ink:#18364a;--text:#203040;--muted:#52606d;--line:#d9e1e8;--paper:#fff;--canvas:#f3f6f7;--blue:#2878a0;--green:#4e9a72;--orange:#d78a36}
+*{box-sizing:border-box}body{margin:0;background:var(--canvas);color:var(--text);font:15px/1.45 "Segoe UI",Arial,sans-serif}
+header{background:var(--ink);color:white;padding:20px max(20px,calc((100vw - 1500px)/2));display:flex;align-items:center;justify-content:space-between;gap:18px}
+header h1{font-size:22px;line-height:1.2;margin:0}header p{font-size:12px;color:#d5e1e7;margin:5px 0 0}#save-status{font-size:12px;white-space:nowrap}
+.layout{max-width:1540px;padding:20px;margin:auto;display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:20px;align-items:start}
+aside,.results{min-width:0}.panel-title{font-size:17px;color:var(--ink);margin:0 0 12px}
+.input-group,.output-section{background:var(--paper);border:1px solid var(--line);border-radius:6px;margin-bottom:10px}
+.input-group summary{cursor:pointer;padding:12px 14px;color:var(--ink);font-weight:700}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 13px}
+.field{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}.field input,.field select{width:100%;min-width:0;border:1px solid #bac7cf;border-radius:4px;padding:8px;background:white;color:var(--text);font:inherit;font-size:14px}
+.check-field{grid-column:span 2;display:flex;align-items:center;gap:8px;color:var(--text);font-size:13px}.check-field input{width:17px;height:17px;accent-color:var(--blue)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}button,.file-label{border:1px solid var(--blue);background:var(--blue);color:#fff;padding:9px 10px;border-radius:4px;font:inherit;font-size:13px;font-weight:700;text-align:center;cursor:pointer}button.secondary,.file-label.secondary{background:#fff;color:var(--blue)}button:hover,.file-label:hover{filter:brightness(.94)}#import-file{display:none}.note{color:var(--muted);font-size:12px;margin:8px 2px}
+.output-section{padding:14px;overflow:hidden}.output-section h2{font-size:17px;color:var(--ink);margin:0 0 12px}.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kpi{border-bottom:2px solid var(--blue);padding:8px 5px;min-width:0}.kpi span{display:block;font-size:11px;color:var(--muted)}.kpi strong{display:block;color:var(--ink);font-size:15px;margin-top:4px;overflow-wrap:anywhere}
+.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:680px;font-size:12px}th{background:var(--ink);color:#fff;text-align:left}th,td{padding:8px;border:1px solid var(--line);vertical-align:top}tbody tr:nth-child(even){background:#f0f5f7}td.num{text-align:right;white-space:nowrap}
+.chart-list{display:grid;gap:12px}.chart-row{display:grid;grid-template-columns:minmax(120px,190px) minmax(80px,1fr) minmax(110px,150px);gap:8px;align-items:center;font-size:12px}.chart-row label{color:var(--muted)}.bar-track{height:13px;background:#e7edf0;border-radius:3px;overflow:hidden}.bar{height:100%;min-width:1px;border-radius:3px}.chart-value{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#error-box{display:none;background:#fff1ed;border-left:4px solid #b94b32;padding:10px;margin-bottom:10px;color:#792f22}
+@media(max-width:900px){.layout{grid-template-columns:1fr;padding:12px}header{padding:16px;align-items:flex-start;flex-direction:column}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.field-grid{grid-template-columns:1fr}.check-field{grid-column:span 1}.chart-row{grid-template-columns:minmax(100px,1fr) 1fr;gap:5px}.bar-track{grid-column:1/-1;grid-row:2}.chart-value{grid-column:2;grid-row:1}.actions{grid-template-columns:1fr}}
+@media print{body{background:#fff}.layout{display:block;max-width:none;padding:0}aside,.actions,.note{display:none}.output-section{break-inside:avoid;border:0}}
+</style></head>
+<body>
+<header><div><h1>Synvitta2 - Simulação detalhada</h1><p>Calculadora local. Os cálculos acontecem neste navegador; nenhum dado é enviado.</p></div><span id="save-status" aria-live="polite"></span></header>
+<div class="layout"><aside><h2 class="panel-title">Premissas editáveis</h2><form id="input-form"><details class="input-group" open><summary>Produto, volume e câmbio</summary><div class="field-grid"><label class="field" for="f-ncm_codigo"><span>NCM do produto</span><input id="f-ncm_codigo" data-key="ncm_codigo" type="text" value="3822.19.90"></label><label class="field" for="f-pais_origem"><span>País de origem aduaneira</span><input id="f-pais_origem" data-key="pais_origem" type="text" value="Estados Unidos"></label><label class="field" for="f-local_origem"><span>Local de origem / embarque</span><input id="f-local_origem" data-key="local_origem" type="text" value="Alachua, Florida"></label><label class="field" for="f-uf_destino"><span>UF de destino</span><select id="f-uf_destino" data-key="uf_destino"><option value="Não informado">Não informado</option><option value="AC">AC</option><option value="AL">AL</option><option value="AM">AM</option><option value="AP">AP</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MG">MG</option><option value="MS">MS</option><option value="MT">MT</option><option value="PA">PA</option><option value="PB">PB</option><option value="PE">PE</option><option value="PI">PI</option><option value="PR">PR</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RO">RO</option><option value="RR">RR</option><option value="RS">RS</option><option value="SC">SC</option><option value="SE">SE</option><option value="SP" selected>SP</option><option value="TO">TO</option></select></label><label class="field" for="f-incoterm"><span>Incoterm negociado</span><select id="f-incoterm" data-key="incoterm"><option value="FOB">FOB</option><option value="EXW" selected>EXW</option><option value="FCA">FCA</option><option value="FAS">FAS</option><option value="CFR">CFR</option><option value="CIF">CIF</option><option value="CPT">CPT</option><option value="CIP">CIP</option><option value="DAP">DAP</option><option value="DPU">DPU</option><option value="DDP">DDP</option></select></label><label class="field" for="f-regime_tributario"><span>Regime tributário</span><select id="f-regime_tributario" data-key="regime_tributario"><option value="Não informado">Não informado</option><option value="Lucro Real">Lucro Real</option><option value="Lucro Presumido" selected>Lucro Presumido</option><option value="Simples Nacional">Simples Nacional</option><option value="Outro">Outro</option></select></label><label class="field" for="f-registro_sanitario"><span>Registro / licença sanitária</span><input id="f-registro_sanitario" data-key="registro_sanitario" type="text" value="ANVISA/AFE"></label><label class="field" for="f-quantidade"><span>Kits importados</span><input id="f-quantidade" data-key="quantidade" data-scale="1.0" type="number" value="1000.00000000" step="any"></label><label class="field" for="f-quantidade_vendida"><span>Kits vendidos no período</span><input id="f-quantidade_vendida" data-key="quantidade_vendida" data-scale="1.0" type="number" value="1000.00000000" step="any"></label><label class="field" for="f-cambio"><span>Câmbio (R$/USD)</span><input id="f-cambio" data-key="cambio" data-scale="1.0" type="number" value="5.60000000" step="any"></label><label class="field" for="f-preco_fob_base"><span>Preço FOB da matriz (USD/kit)</span><input id="f-preco_fob_base" data-key="preco_fob_base" data-scale="1.0" type="number" value="200.00000000" step="any"></label><label class="field" for="f-custo_fabricacao_usd"><span>Custo de fabricação da matriz (USD/kit)</span><input id="f-custo_fabricacao_usd" data-key="custo_fabricacao_usd" data-scale="1.0" type="number" value="100.00000000" step="any"></label><label class="field" for="f-receita_por_kit"><span>Preço bruto de venda Brasil (R$/kit)</span><input id="f-receita_por_kit" data-key="receita_por_kit" data-scale="1.0" type="number" value="9598.40000000" step="any"></label><label class="field" for="f-meses_operacao"><span>Período da DRE (meses)</span><input id="f-meses_operacao" data-key="meses_operacao" data-scale="1.0" type="number" value="3.00000000" step="any"></label></div></details><details class="input-group"><summary>Embalagem e frete</summary><div class="field-grid"><label class="field" for="f-kits_por_volume"><span>Kits por caixa/volume</span><input id="f-kits_por_volume" data-key="kits_por_volume" data-scale="1.0" type="number" value="40.00000000" step="any"></label><label class="field" for="f-comprimento"><span>Comprimento da caixa (cm)</span><input id="f-comprimento" data-key="comprimento" data-scale="1.0" type="number" value="61.00000000" step="any"></label><label class="field" for="f-largura"><span>Largura da caixa (cm)</span><input id="f-largura" data-key="largura" data-scale="1.0" type="number" value="61.00000000" step="any"></label><label class="field" for="f-altura"><span>Altura da caixa (cm)</span><input id="f-altura" data-key="altura" data-scale="1.0" type="number" value="50.80000000" step="any"></label><label class="field" for="f-peso_bruto_total"><span>Peso bruto total (kg)</span><input id="f-peso_bruto_total" data-key="peso_bruto_total" data-scale="1.0" type="number" value="774.00000000" step="any"></label><label class="field" for="f-divisor_volumetrico"><span>Divisor volumétrico (cm³/kg)</span><input id="f-divisor_volumetrico" data-key="divisor_volumetrico" data-scale="1.0" type="number" value="4726.00000000" step="any"></label><label class="field" for="f-modal"><span>Modal internacional</span><select id="f-modal" data-key="modal"><option value="Marítimo">Marítimo</option><option value="Aéreo" selected>Aéreo</option><option value="Rodoviário">Rodoviário</option><option value="Outro">Outro</option></select></label><label class="field" for="f-calculo_frete"><span>Cálculo do frete</span><select id="f-calculo_frete" data-key="calculo_frete"><option value="Valor total informado" selected>Valor total informado</option><option value="Tarifa marítima por W/M">Tarifa marítima por W/M</option><option value="Tarifa por kg taxável">Tarifa por kg taxável</option><option value="Tarifa por m³">Tarifa por m³</option></select></label><label class="field" for="f-frete_usd"><span>Frete total informado (USD)</span><input id="f-frete_usd" data-key="frete_usd" data-scale="1.0" type="number" value="6400.00000000" step="any"></label><label class="field" for="f-tarifa_wm"><span>Tarifa marítima por W/M (USD)</span><input id="f-tarifa_wm" data-key="tarifa_wm" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-tarifa_frete_kg"><span>Tarifa por kg taxável (USD)</span><input id="f-tarifa_frete_kg" data-key="tarifa_frete_kg" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-tarifa_m3"><span>Tarifa por m³ (USD)</span><input id="f-tarifa_m3" data-key="tarifa_m3" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-seguro_pct"><span>Seguro (% sobre FOB + frete)</span><input id="f-seguro_pct" data-key="seguro_pct" data-scale="1.0" type="number" value="0.25000000" step="any"></label><label class="field" for="f-ajustes_aduaneiros_brl"><span>Ajustes ao valor aduaneiro (R$)</span><input id="f-ajustes_aduaneiros_brl" data-key="ajustes_aduaneiros_brl" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-frete_interno_brl"><span>Frete interno (R$)</span><input id="f-frete_interno_brl" data-key="frete_interno_brl" data-scale="1.0" type="number" value="0.00000000" step="any"></label></div></details><details class="input-group"><summary>Tributos e despesas de importação</summary><div class="field-grid"><label class="field" for="f-modo_custos_importacao"><span>Composição dos custos aduaneiros</span><select id="f-modo_custos_importacao" data-key="modo_custos_importacao"><option value="Detalhado" selected>Detalhado</option><option value="Consolidado">Consolidado</option></select></label><label class="field" for="f-aliq_ii"><span>II (%)</span><input id="f-aliq_ii" data-key="aliq_ii" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-aliq_ipi"><span>IPI-importação (%)</span><input id="f-aliq_ipi" data-key="aliq_ipi" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-aliq_pis"><span>PIS-importação (%)</span><input id="f-aliq_pis" data-key="aliq_pis" data-scale="1.0" type="number" value="0.21000000" step="any"></label><label class="field" for="f-aliq_cofins"><span>Cofins-importação (%)</span><input id="f-aliq_cofins" data-key="aliq_cofins" data-scale="1.0" type="number" value="0.96500000" step="any"></label><label class="field" for="f-aliq_cbs"><span>CBS-importação (%)</span><input id="f-aliq_cbs" data-key="aliq_cbs" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-aliq_ibs"><span>IBS-importação (%)</span><input id="f-aliq_ibs" data-key="aliq_ibs" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-multiplo_base_cbs_ibs"><span>Base CBS/IBS (múltiplo do VA)</span><input id="f-multiplo_base_cbs_ibs" data-key="multiplo_base_cbs_ibs" data-scale="1.0" type="number" value="1.00000000" step="any"></label><label class="field" for="f-aliq_icms"><span>ICMS-importação (%)</span><input id="f-aliq_icms" data-key="aliq_icms" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-aliq_afrmm"><span>AFRMM (% sobre frete marítimo)</span><input id="f-aliq_afrmm" data-key="aliq_afrmm" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-antidumping_brl"><span>Antidumping / medidas compensatórias (R$)</span><input id="f-antidumping_brl" data-key="antidumping_brl" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-despesas_na_base_icms"><span>Despesas incluídas na base ICMS (R$)</span><input id="f-despesas_na_base_icms" data-key="despesas_na_base_icms" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-custo_armazenagem"><span>Armazenagem (R$)</span><input id="f-custo_armazenagem" data-key="custo_armazenagem" data-scale="1.0" type="number" value="11299.62000000" step="any"></label><label class="field" for="f-custo_capatazia"><span>Capatazia / terminal (R$)</span><input id="f-custo_capatazia" data-key="custo_capatazia" data-scale="1.0" type="number" value="2500.00000000" step="any"></label><label class="field" for="f-custo_despachante"><span>Despachante aduaneiro (R$)</span><input id="f-custo_despachante" data-key="custo_despachante" data-scale="1.0" type="number" value="4500.00000000" step="any"></label><label class="field" for="f-taxa_siscomex"><span>Taxa Siscomex (R$)</span><input id="f-taxa_siscomex" data-key="taxa_siscomex" data-scale="1.0" type="number" value="136.53000000" step="any"></label><label class="field" for="f-taxas_terminal"><span>Taxas portuárias / aeroportuárias (R$)</span><input id="f-taxas_terminal" data-key="taxas_terminal" data-scale="1.0" type="number" value="600.00000000" step="any"></label><label class="field" for="f-honorarios_agente_carga"><span>Honorários / agente de carga (R$)</span><input id="f-honorarios_agente_carga" data-key="honorarios_agente_carga" data-scale="1.0" type="number" value="1100.00000000" step="any"></label><label class="field" for="f-licencas_inspecao"><span>Licenças, análise e inspeção (R$)</span><input id="f-licencas_inspecao" data-key="licencas_inspecao" data-scale="1.0" type="number" value="1637.70000000" step="any"></label><label class="field" for="f-outras_despesas_importacao"><span>Outras despesas de importação (R$)</span><input id="f-outras_despesas_importacao" data-key="outras_despesas_importacao" data-scale="1.0" type="number" value="1500.00000000" step="any"></label><label class="field" for="f-custo_importacao_consolidado_brl"><span>Tributos/despesas consolidados (R$)</span><input id="f-custo_importacao_consolidado_brl" data-key="custo_importacao_consolidado_brl" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="check-field" for="f-credita_ipi"><input id="f-credita_ipi" data-key="credita_ipi" type="checkbox"><span>IPI recuperável</span></label><label class="check-field" for="f-credita_pis"><input id="f-credita_pis" data-key="credita_pis" type="checkbox"><span>PIS-importação recuperável</span></label><label class="check-field" for="f-credita_cofins"><input id="f-credita_cofins" data-key="credita_cofins" type="checkbox"><span>Cofins-importação recuperável</span></label><label class="check-field" for="f-credita_cbs_ibs"><input id="f-credita_cbs_ibs" data-key="credita_cbs_ibs" type="checkbox"><span>CBS/IBS-importação recuperáveis</span></label><label class="check-field" for="f-credita_icms"><input id="f-credita_icms" data-key="credita_icms" type="checkbox"><span>ICMS recuperável</span></label></div></details><details class="input-group"><summary>Receita e tributos sobre vendas</summary><div class="field-grid"><label class="field" for="f-devolucoes_descontos"><span>Devoluções, abatimentos e descontos (R$)</span><input id="f-devolucoes_descontos" data-key="devolucoes_descontos" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-modo_tributos_venda"><span>Composição dos tributos sobre vendas</span><select id="f-modo_tributos_venda" data-key="modo_tributos_venda"><option value="Detalhado" selected>Detalhado</option><option value="Consolidado">Consolidado</option></select></label><label class="field" for="f-aliq_icms_venda"><span>ICMS efetivo sobre vendas (%)</span><input id="f-aliq_icms_venda" data-key="aliq_icms_venda" data-scale="1.0" type="number" value="4.00000000" step="any"></label><label class="field" for="f-aliq_pis_venda"><span>PIS efetivo sobre vendas (%)</span><input id="f-aliq_pis_venda" data-key="aliq_pis_venda" data-scale="1.0" type="number" value="0.65000000" step="any"></label><label class="field" for="f-aliq_cofins_venda"><span>Cofins efetiva sobre vendas (%)</span><input id="f-aliq_cofins_venda" data-key="aliq_cofins_venda" data-scale="1.0" type="number" value="3.00000000" step="any"></label><label class="field" for="f-aliq_outros_venda"><span>Outros tributos sobre vendas (%)</span><input id="f-aliq_outros_venda" data-key="aliq_outros_venda" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-aliq_venda_consolidada"><span>Alíquota consolidada sobre vendas (%)</span><input id="f-aliq_venda_consolidada" data-key="aliq_venda_consolidada" data-scale="1.0" type="number" value="0.00000000" step="any"></label><label class="field" for="f-operador_pct"><span>Operação / armazenagem variável (% receita líquida)</span><input id="f-operador_pct" data-key="operador_pct" data-scale="1.0" type="number" value="3.00000000" step="any"></label></div></details><details class="input-group"><summary>Opex e despesas financeiras</summary><div class="field-grid"><label class="field" for="f-modo_opex"><span>Composição do Opex</span><select id="f-modo_opex" data-key="modo_opex"><option value="Detalhado" selected>Detalhado</option><option value="Consolidado">Consolidado</option></select></label><label class="field" for="f-opex_pessoal"><span>Pessoal e encargos / mês (R$)</span><input id="f-opex_pessoal" data-key="opex_pessoal" data-scale="1.0" type="number" value="90000.00000000" step="any"></label><label class="field" for="f-opex_aluguel"><span>Aluguel e condomínio / mês (R$)</span><input id="f-opex_aluguel" data-key="opex_aluguel" data-scale="1.0" type="number" value="25000.00000000" step="any"></label><label class="field" for="f-opex_utilidades"><span>Utilidades e telecomunicações / mês (R$)</span><input id="f-opex_utilidades" data-key="opex_utilidades" data-scale="1.0" type="number" value="10000.00000000" step="any"></label><label class="field" for="f-opex_servicos_profissionais"><span>Serviços profissionais / mês (R$)</span><input id="f-opex_servicos_profissionais" data-key="opex_servicos_profissionais" data-scale="1.0" type="number" value="15000.00000000" step="any"></label><label class="field" for="f-opex_comercial_marketing"><span>Comercial e marketing / mês (R$)</span><input id="f-opex_comercial_marketing" data-key="opex_comercial_marketing" data-scale="1.0" type="number" value="30000.00000000" step="any"></label><label class="field" for="f-opex_sistemas"><span>Sistemas e comunicações / mês (R$)</span><input id="f-opex_sistemas" data-key="opex_sistemas" data-scale="1.0" type="number" value="5000.00000000" step="any"></label><label class="field" for="f-opex_seguros"><span>Seguros / mês (R$)</span><input id="f-opex_seguros" data-key="opex_seguros" data-scale="1.0" type="number" value="5000.00000000" step="any"></label><label class="field" for="f-opex_depreciacao"><span>Depreciação e amortização / mês (R$)</span><input id="f-opex_depreciacao" data-key="opex_depreciacao" data-scale="1.0" type="number" value="10000.00000000" step="any"></label><label class="field" for="f-opex_administrativo"><span>Despesas administrativas / mês (R$)</span><input id="f-opex_administrativo" data-key="opex_administrativo" data-scale="1.0" type="number" value="5000.00000000" step="any"></label><label class="field" for="f-opex_outros"><span>Outros Opex / mês (R$)</span><input id="f-opex_outros" data-key="opex_outros" data-scale="1.0" type="number" value="5000.00000000" step="any"></label><label class="field" for="f-opex_consolidado_mensal"><span>Opex consolidado / mês (R$)</span><input id="f-opex_consolidado_mensal" data-key="opex_consolidado_mensal" data-scale="1.0" type="number" value="200000.00000000" step="any"></label><label class="field" for="f-juros_brl"><span>Juros e despesas financeiras (R$)</span><input id="f-juros_brl" data-key="juros_brl" data-scale="1.0" type="number" value="0.00000000" step="any"></label></div></details><details class="input-group"><summary>Tributos sobre lucro e remessas</summary><div class="field-grid"><label class="field" for="f-aliq_irpj_faturamento"><span>IRPJ efetivo sobre faturamento (%)</span><input id="f-aliq_irpj_faturamento" data-key="aliq_irpj_faturamento" data-scale="1.0" type="number" value="1.20000000" step="any"></label><label class="field" for="f-aliq_csll_faturamento"><span>CSLL efetiva sobre faturamento (%)</span><input id="f-aliq_csll_faturamento" data-key="aliq_csll_faturamento" data-scale="1.0" type="number" value="1.08000000" step="any"></label><label class="field" for="f-base_presumida_irpj"><span>Base presumida para adicional IRPJ (%)</span><input id="f-base_presumida_irpj" data-key="base_presumida_irpj" data-scale="1.0" type="number" value="8.00000000" step="any"></label><label class="field" for="f-aliq_adicional_irpj"><span>Adicional de IRPJ (%)</span><input id="f-aliq_adicional_irpj" data-key="aliq_adicional_irpj" data-scale="1.0" type="number" value="10.00000000" step="any"></label><label class="field" for="f-limite_adicional_irpj_mensal"><span>Limite mensal adicional IRPJ (R$)</span><input id="f-limite_adicional_irpj_mensal" data-key="limite_adicional_irpj_mensal" data-scale="1.0" type="number" value="20000.00000000" step="any"></label><label class="field" for="f-aliq_ir_csll"><span>IR/CSLL sobre lucro (outros regimes) (%)</span><input id="f-aliq_ir_csll" data-key="aliq_ir_csll" data-scale="1.0" type="number" value="32.00000000" step="any"></label><label class="field" for="f-aliq_federal_eua"><span>Imposto federal EUA (%)</span><input id="f-aliq_federal_eua" data-key="aliq_federal_eua" data-scale="1.0" type="number" value="21.00000000" step="any"></label><label class="field" for="f-aliq_fl"><span>Imposto estadual Flórida (%)</span><input id="f-aliq_fl" data-key="aliq_fl" data-scale="1.0" type="number" value="5.50000000" step="any"></label><label class="field" for="f-rateio_fl"><span>Parcela atribuída à Flórida (%)</span><input id="f-rateio_fl" data-key="rateio_fl" data-scale="1.0" type="number" value="100.00000000" step="any"></label><label class="field" for="f-opex_matriz_usd"><span>Opex da matriz atribuído à exportação (USD)</span><input id="f-opex_matriz_usd" data-key="opex_matriz_usd" data-scale="1.0" type="number" value="350.00000000" step="any"></label><label class="field" for="f-participacao_matriz"><span>Parcela da matriz no lucro Brasil (%)</span><input id="f-participacao_matriz" data-key="participacao_matriz" data-scale="1.0" type="number" value="75.00000000" step="any"></label><label class="field" for="f-retencao_dividendos"><span>Retenção sobre dividendos (%)</span><input id="f-retencao_dividendos" data-key="retencao_dividendos" data-scale="1.0" type="number" value="10.00000000" step="any"></label><label class="field" for="f-custo_remessa"><span>Custo cambial da remessa (%)</span><input id="f-custo_remessa" data-key="custo_remessa" data-scale="1.0" type="number" value="1.00000000" step="any"></label></div></details><details class="input-group"><summary>Cenário 2</summary><div class="field-grid"><label class="field" for="f-preco_fob_c2"><span>Preço FOB alternativo da matriz (USD/kit)</span><input id="f-preco_fob_c2" data-key="preco_fob_c2" data-scale="1.0" type="number" value="200.00000000" step="any"></label><label class="field" for="f-quantidade_vendida_c2"><span>Kits vendidos no cenário 2</span><input id="f-quantidade_vendida_c2" data-key="quantidade_vendida_c2" data-scale="1.0" type="number" value="1000.00000000" step="any"></label><label class="field" for="f-receita_por_kit_c2"><span>Preço de venda Brasil no cenário 2 (R$/kit)</span><input id="f-receita_por_kit_c2" data-key="receita_por_kit_c2" data-scale="1.0" type="number" value="9598.40000000" step="any"></label><label class="field" for="f-fator_opex_c2"><span>Fator do Opex local no cenário 2 (x)</span><input id="f-fator_opex_c2" data-key="fator_opex_c2" data-scale="1.0" type="number" value="1.00000000" step="any"></label><label class="field" for="f-participacao_matriz_c2"><span>Parcela da matriz no cenário 2 (%)</span><input id="f-participacao_matriz_c2" data-key="participacao_matriz_c2" data-scale="1.0" type="number" value="0.00000000" step="any"></label></div></details></form>
+<div class="actions"><button id="export-inputs" type="button">Exportar premissas</button>
+<label class="file-label secondary" for="import-file">Importar premissas</label>
+<input id="import-file" type="file" accept="application/json,.json">
+<button class="secondary" id="reset-inputs" type="button">Restaurar valores iniciais</button></div>
+<p class="note">As alterações são locais neste dispositivo. Use Exportar/Importar premissas para transferi-las.</p></aside>
+<main class="results"><h2 class="panel-title">Resultados atualizados</h2><div id="error-box" role="alert"></div>
+<div id="results-content" aria-live="polite"></div></main></div>
+<script id="initial-values" type="application/json">{"ncm_codigo":"3822.19.90","pais_origem":"Estados Unidos","local_origem":"Alachua, Florida","uf_destino":"SP","incoterm":"EXW","regime_tributario":"Lucro Presumido","registro_sanitario":"ANVISA/AFE","quantidade":1000,"quantidade_vendida":1000,"cambio":5.6,"preco_fob_base":200.0,"custo_fabricacao_usd":100.0,"receita_por_kit":9598.4,"meses_operacao":3,"kits_por_volume":40,"comprimento":61.0,"largura":61.0,"altura":50.8,"peso_bruto_total":774.0,"divisor_volumetrico":4726,"modal":"Aéreo","calculo_frete":"Valor total informado","frete_usd":6400.0,"tarifa_wm":0.0,"tarifa_frete_kg":0.0,"tarifa_m3":0.0,"seguro_pct":0.25,"ajustes_aduaneiros_brl":0.0,"frete_interno_brl":0.0,"modo_custos_importacao":"Detalhado","aliq_ii":0.0,"aliq_ipi":0.0,"aliq_pis":0.21,"aliq_cofins":0.965,"aliq_cbs":0.0,"aliq_ibs":0.0,"multiplo_base_cbs_ibs":1.0,"aliq_icms":0.0,"aliq_afrmm":0.0,"antidumping_brl":0.0,"despesas_na_base_icms":0.0,"custo_armazenagem":11299.62,"custo_capatazia":2500.0,"custo_despachante":4500.0,"taxa_siscomex":136.53,"taxas_terminal":600.0,"honorarios_agente_carga":1100.0,"licencas_inspecao":1637.7,"outras_despesas_importacao":1500.0,"custo_importacao_consolidado_brl":0.0,"credita_ipi":false,"credita_pis":false,"credita_cofins":false,"credita_cbs_ibs":false,"credita_icms":false,"devolucoes_descontos":0.0,"modo_tributos_venda":"Detalhado","aliq_icms_venda":4.0,"aliq_pis_venda":0.65,"aliq_cofins_venda":3.0,"aliq_outros_venda":0.0,"aliq_venda_consolidada":0.0,"operador_pct":3.0,"modo_opex":"Detalhado","opex_pessoal":90000.0,"opex_aluguel":25000.0,"opex_utilidades":10000.0,"opex_servicos_profissionais":15000.0,"opex_comercial_marketing":30000.0,"opex_sistemas":5000.0,"opex_seguros":5000.0,"opex_depreciacao":10000.0,"opex_administrativo":5000.0,"opex_outros":5000.0,"opex_consolidado_mensal":200000.0,"juros_brl":0.0,"aliq_irpj_faturamento":1.2,"aliq_csll_faturamento":1.08,"base_presumida_irpj":8.0,"aliq_adicional_irpj":10.0,"limite_adicional_irpj_mensal":20000.0,"aliq_ir_csll":32.0,"aliq_federal_eua":21.0,"aliq_fl":5.5,"rateio_fl":100.0,"opex_matriz_usd":350.0,"participacao_matriz":75,"retencao_dividendos":10.0,"custo_remessa":1.0,"preco_fob_c2":200.0,"quantidade_vendida_c2":1000,"receita_por_kit_c2":9598.4,"fator_opex_c2":1.0,"participacao_matriz_c2":0}</script>
+<script>
+"use strict";
+const MODEL_ID="synvitta2";
+const LANGUAGE="pt";
+const DEFAULTS=JSON.parse(document.getElementById("initial-values").textContent);
+const SAVE_KEY="synvitta-standalone:"+MODEL_ID;
+const TXT={"tagline": "Calculadora local. Os cálculos acontecem neste navegador; nenhum dado é enviado.", "inputs": "Premissas editáveis", "results": "Resultados atualizados", "download_inputs": "Exportar premissas", "upload_inputs": "Importar premissas", "reset": "Restaurar valores iniciais", "saved": "Premissas salvas neste navegador", "saved_error": "Este navegador não permite salvar localmente. Exporte as premissas para transferi-las.", "assumptions": "As alterações são locais neste dispositivo. Use Exportar/Importar premissas para transferi-las.", "chart": "Comparação de resultados", "scenario": "Cenário", "import_error": "Arquivo de premissas inválido ou de outro simulador.", "import_ok": "Premissas importadas.", "export_name": "premissas"};
+function calculate(v, lang) {
+    const pt = lang === "pt";
+    const n = key => Number(v[key] || 0);
+    const s = key => String(v[key] ?? "");
+    const label = (ptText, enText) => pt ? ptText : enText;
+    const money = value => {
+        const number = new Intl.NumberFormat(pt ? "pt-BR" : "en-US", {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        }).format(Number(value) || 0);
+        return (pt ? "R$ " : "BRL ") + number;
+    };
+    const usd = value => "USD " + new Intl.NumberFormat(pt ? "pt-BR" : "en-US", {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(Number(value) || 0);
+    const pct = value => new Intl.NumberFormat(pt ? "pt-BR" : "en-US", {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(Number(value) || 0) + "%";
+    const rate = key => n(key) / 100;
+    const quantity = Math.max(1, n("quantidade"));
+    const sold1 = Math.max(0, Math.min(quantity, n("quantidade_vendida")));
+    const sold2 = Math.max(0, Math.min(quantity, n("quantidade_vendida_c2")));
+    const exchange = Math.max(0.01, n("cambio"));
+    const period = Math.max(1, n("meses_operacao"));
+    const boxes = Math.ceil(quantity / Math.max(1, n("kits_por_volume")));
+    const volumeM3 = boxes * n("comprimento") * n("largura") * n("altura") / 1000000;
+    const volumetricWeight = boxes * n("comprimento") * n("largura") * n("altura") / Math.max(1, n("divisor_volumetrico"));
+    const chargeableWeight = Math.max(n("peso_bruto_total"), volumetricWeight);
+    const wm = Math.max(volumeM3, n("peso_bruto_total") / 1000);
+    let freightUsd = n("frete_usd");
+    if (s("calculo_frete") === "Tarifa marítima por W/M") freightUsd = n("tarifa_wm") * wm;
+    else if (s("calculo_frete") === "Tarifa por kg taxável") freightUsd = n("tarifa_frete_kg") * chargeableWeight;
+    else if (s("calculo_frete") === "Tarifa por m³") freightUsd = n("tarifa_m3") * volumeM3;
+    const freightBrl = freightUsd * exchange;
+    const detailedImport = s("modo_custos_importacao") === "Detalhado";
+    const dispatchCosts = [
+        ["Armazenagem", "Warehousing", "custo_armazenagem"],
+        ["Capatazia / terminal", "Cargo handling / terminal", "custo_capatazia"],
+        ["Despachante aduaneiro", "Customs broker", "custo_despachante"],
+        ["Taxa Siscomex", "Siscomex fee", "taxa_siscomex"],
+        ["Taxas portuárias / aeroportuárias", "Port / airport fees", "taxas_terminal"],
+        ["Honorários / agente de carga", "Forwarder / freight agent fees", "honorarios_agente_carga"],
+        ["Licenças, análise e inspeção", "Licenses, testing, and inspection", "licencas_inspecao"],
+        ["Outras despesas de importação", "Other import expenses", "outras_despesas_importacao"]
+    ];
+    function calculateImport(fobPerKit) {
+        const fobUsd = fobPerKit * quantity;
+        const insuranceBrl = (fobUsd + freightUsd) * exchange * rate("seguro_pct");
+        const customsValue = fobUsd * exchange + freightBrl + insuranceBrl + n("ajustes_aduaneiros_brl");
+        const ii = detailedImport ? customsValue * rate("aliq_ii") : 0;
+        const ipi = detailedImport ? (customsValue + ii + n("antidumping_brl")) * rate("aliq_ipi") : 0;
+        const pisImport = detailedImport ? customsValue * rate("aliq_pis") : 0;
+        const cofinsImport = detailedImport ? customsValue * rate("aliq_cofins") : 0;
+        const cbsIbsImport = detailedImport ? customsValue * n("multiplo_base_cbs_ibs") * (rate("aliq_cbs") + rate("aliq_ibs")) : 0;
+        const afrmm = detailedImport && s("modal") === "Marítimo" ? freightBrl * rate("aliq_afrmm") : 0;
+        const icmsBaseBefore = customsValue + ii + ipi + pisImport + cofinsImport + afrmm + (detailedImport ? n("antidumping_brl") + n("despesas_na_base_icms") : 0);
+        const icmsBase = detailedImport && rate("aliq_icms") < 1 ? icmsBaseBefore / (1 - rate("aliq_icms")) : 0;
+        const icms = icmsBase * rate("aliq_icms");
+        const dispatchTotal = detailedImport ? dispatchCosts.reduce((sum, row) => sum + n(row[2]), 0) : 0;
+        const importTaxes = detailedImport
+            ? ii + ipi + pisImport + cofinsImport + cbsIbsImport + icms + afrmm + n("antidumping_brl")
+            : n("custo_importacao_consolidado_brl");
+        const credits = detailedImport
+            ? (v.credita_ipi ? ipi : 0) + (v.credita_pis ? pisImport : 0) + (v.credita_cofins ? cofinsImport : 0)
+                + (v.credita_cbs_ibs ? cbsIbsImport : 0) + (v.credita_icms ? icms : 0)
+            : 0;
+        const inventoryCost = Math.max(customsValue + importTaxes + dispatchTotal + n("frete_interno_brl") - credits, 0);
+        const composition = detailedImport
+            ? [
+                ["Valor aduaneiro", "Customs value", customsValue],
+                ["II", "Import duty (II)", ii], ["IPI-importação", "Import IPI", ipi],
+                ["PIS-importação", "Import PIS", pisImport], ["Cofins-importação", "Import Cofins", cofinsImport],
+                ["CBS/IBS-importação estimados", "Estimated import CBS/IBS", cbsIbsImport],
+                ["ICMS-importação", "Import ICMS", icms], ["AFRMM", "Merchant Marine Tax (AFRMM)", afrmm],
+                ["Antidumping / medidas compensatórias", "Anti-dumping / countervailing duties", n("antidumping_brl")],
+                ...dispatchCosts.map(row => [row[0], row[1], n(row[2])]),
+                ["Frete interno", "Domestic freight", n("frete_interno_brl")],
+                ["Créditos tributários estimados", "Estimated tax credits", -credits],
+                ["Custo de aquisição do estoque", "Inventory acquisition cost", inventoryCost]
+            ]
+            : [
+                ["Valor aduaneiro", "Customs value", customsValue],
+                ["Tributos e despesas aduaneiras consolidados", "Consolidated import taxes and customs expenses", importTaxes],
+                ["Frete interno", "Domestic freight", n("frete_interno_brl")],
+                ["Créditos tributários estimados", "Estimated tax credits", -credits],
+                ["Custo de aquisição do estoque", "Inventory acquisition cost", inventoryCost]
+            ];
+        const outlay = customsValue + importTaxes + dispatchTotal + n("frete_interno_brl");
+        return {customsValue, importTaxes, dispatchTotal, credits, inventoryCost, outlay, composition};
+    }
+    const import1 = calculateImport(n("preco_fob_base"));
+    const import2 = calculateImport(n("preco_fob_c2"));
+    const salesTaxRate = s("modo_tributos_venda") === "Detalhado"
+        ? rate("aliq_icms_venda") + rate("aliq_pis_venda") + rate("aliq_cofins_venda") + rate("aliq_outros_venda")
+        : rate("aliq_venda_consolidada");
+    const monthlyOpex = s("modo_opex") === "Detalhado"
+        ? ["opex_pessoal", "opex_aluguel", "opex_utilidades", "opex_servicos_profissionais", "opex_comercial_marketing", "opex_sistemas", "opex_seguros", "opex_depreciacao", "opex_administrativo", "opex_outros"].reduce((sum, key) => sum + n(key), 0)
+        : n("opex_consolidado_mensal");
+    const isPresumedProfit = s("regime_tributario") === "Lucro Presumido";
+    function calculateScenario(fobPerKit, sold, pricePerKit, opexFactor, parentShare, importData) {
+        const fobUsd = fobPerKit * quantity;
+        const cogs = importData.inventoryCost / quantity * sold;
+        const grossRevenue = pricePerKit * sold;
+        const commercialRevenue = Math.max(grossRevenue - n("devolucoes_descontos"), 0);
+        const salesTaxes = commercialRevenue * salesTaxRate;
+        const netRevenue = commercialRevenue - salesTaxes;
+        const opex = monthlyOpex * period * opexFactor;
+        const variableOperator = netRevenue * rate("operador_pct");
+        const operatingProfit = netRevenue - cogs - variableOperator - opex;
+        const profitBeforeTax = operatingProfit - n("juros_brl");
+        let irpj = 0, additionalIrpj = 0, csll = 0, brazilTax = 0;
+        if (isPresumedProfit) {
+            irpj = commercialRevenue * rate("aliq_irpj_faturamento");
+            additionalIrpj = Math.max(commercialRevenue * rate("base_presumida_irpj") - n("limite_adicional_irpj_mensal") * period, 0) * rate("aliq_adicional_irpj");
+            csll = commercialRevenue * rate("aliq_csll_faturamento");
+            brazilTax = irpj + additionalIrpj + csll;
+        } else {
+            brazilTax = Math.max(profitBeforeTax, 0) * rate("aliq_ir_csll");
+            irpj = brazilTax;
+        }
+        const netBrazil = profitBeforeTax - brazilTax;
+        const manufacturingCost = n("custo_fabricacao_usd") * quantity * exchange;
+        const exportProfitBeforeTax = fobUsd * exchange - manufacturingCost - n("opex_matriz_usd") * exchange;
+        const floridaTax = Math.max(exportProfitBeforeTax, 0) * rate("rateio_fl") * rate("aliq_fl");
+        const federalTax = Math.max(exportProfitBeforeTax - floridaTax, 0) * rate("aliq_federal_eua");
+        const netExportProfit = exportProfitBeforeTax - floridaTax - federalTax;
+        const parentBrazilProfit = Math.max(netBrazil, 0) * parentShare;
+        const dividendWithholding = parentBrazilProfit * rate("retencao_dividendos");
+        const remittanceAfterTax = parentBrazilProfit - dividendWithholding;
+        const remittanceCost = remittanceAfterTax * rate("custo_remessa");
+        const netRemittance = remittanceAfterTax - remittanceCost;
+        const branchRetained = netBrazil - parentBrazilProfit;
+        const globalProfit = netExportProfit + netBrazil - parentBrazilProfit + netRemittance;
+        const dre = [
+            ["Receita bruta", "Gross revenue", grossRevenue],
+            ["Devoluções, abatimentos e descontos", "Returns, allowances, and discounts", -Math.min(n("devolucoes_descontos"), grossRevenue)],
+            ["Tributos sobre vendas", "Sales taxes", -salesTaxes],
+            ["Receita líquida", "Net revenue", netRevenue],
+            ["Custo das mercadorias vendidas (CMV)", "Cost of goods sold (COGS)", -cogs],
+            ["Operação / armazenagem variável", "Variable operations / warehousing", -variableOperator],
+            ["Opex fixo do período", "Fixed operating expenses for the period", -opex],
+            ["Lucro operacional", "Operating profit", operatingProfit],
+            ["Juros e despesas financeiras", "Interest and financial expenses", -n("juros_brl")],
+            ["Resultado antes de IR/CSLL estimados", "Profit before estimated IR/CSLL", profitBeforeTax]
+        ];
+        if (isPresumedProfit) {
+            dre.push(["IRPJ comercial sobre faturamento", "Commercial IRPJ on revenue", -irpj]);
+            dre.push(["Adicional de IRPJ", "Additional IRPJ", -additionalIrpj]);
+            dre.push(["CSLL comercial sobre faturamento", "Commercial CSLL on revenue", -csll]);
+        } else dre.push(["IR/CSLL estimados", "Estimated IR/CSLL", -brazilTax]);
+        dre.push(["Lucro líquido Brasil", "Brazil net profit", netBrazil]);
+        return {
+            fobUsd, sold, pricePerKit, grossRevenue, commercialRevenue, salesTaxes, netRevenue,
+            cogs, opex, variableOperator, operatingProfit, profitBeforeTax, brazilTax, irpj,
+            additionalIrpj, csll, netBrazil, netExportProfit, parentBrazilProfit, branchRetained,
+            dividendWithholding, remittanceCost, netRemittance, globalProfit, dre,
+            exportMargin: fobUsd ? netExportProfit / (fobUsd * exchange) : 0,
+            marginBrazil: netRevenue ? netBrazil / netRevenue : null,
+            markup: importData.inventoryCost > 0 ? pricePerKit / (importData.inventoryCost / quantity) : null,
+            effectiveBrazilTax: commercialRevenue ? brazilTax / commercialRevenue : null
+        };
+    }
+    const c1 = calculateScenario(n("preco_fob_base"), sold1, n("receita_por_kit"), 1, rate("participacao_matriz"), import1);
+    const c2 = calculateScenario(n("preco_fob_c2"), sold2, n("receita_por_kit_c2"), n("fator_opex_c2"), rate("participacao_matriz_c2"), import2);
+    const comparisonData = [
+        ["Preço FOB matriz", "Parent company FOB price", "USD/kit", n("preco_fob_base"), n("preco_fob_c2")],
+        ["FOB total", "Total FOB", "USD", c1.fobUsd, c2.fobUsd],
+        ["Kits vendidos", "Kits sold", "kits", c1.sold, c2.sold],
+        ["Preço bruto de venda Brasil", "Brazil gross selling price", "R$/kit", c1.pricePerKit, c2.pricePerKit],
+        ["Fator de Opex local", "Local operating expense factor", "x", 1, n("fator_opex_c2")],
+        ["Valor aduaneiro", "Customs value", "R$", import1.customsValue, import2.customsValue],
+        ["Desembolso total da importação", "Total import outlay", "R$", import1.outlay, import2.outlay],
+        ["Créditos tributários estimados", "Estimated tax credits", "R$", import1.credits, import2.credits],
+        ["Custo líquido de aquisição do estoque", "Net inventory acquisition cost", "R$", import1.inventoryCost, import2.inventoryCost],
+        ["Custo de aquisição por kit", "Acquisition cost per kit", "R$/kit", import1.inventoryCost / quantity, import2.inventoryCost / quantity],
+        ["CMV do período", "Cost of goods sold for the period", "R$", c1.cogs, c2.cogs],
+        ["Receita líquida Brasil", "Brazil net revenue", "R$", c1.netRevenue, c2.netRevenue],
+        ["Lucro líquido Brasil", "Brazil net profit", "R$", c1.netBrazil, c2.netBrazil],
+        ["Markup (preço bruto / custo de aquisição)", "Markup (gross price / acquisition cost)", "x", c1.markup, c2.markup],
+        ["IRPJ + CSLL calculados", "Calculated IRPJ + CSLL", "R$", c1.brazilTax, c2.brazilTax],
+        ["Alíquota efetiva IRPJ + CSLL", "Effective IRPJ + CSLL rate", "%", c1.effectiveBrazilTax === null ? null : c1.effectiveBrazilTax * 100, c2.effectiveBrazilTax === null ? null : c2.effectiveBrazilTax * 100],
+        ["Margem líquida Brasil / receita líquida", "Brazil net margin / net revenue", "%", c1.marginBrazil === null ? null : c1.marginBrazil * 100, c2.marginBrazil === null ? null : c2.marginBrazil * 100],
+        ["Parcela atribuída à matriz", "Share allocated to parent company", "%", n("participacao_matriz"), n("participacao_matriz_c2")],
+        ["Parcela atribuída à filial/local", "Share allocated to branch/local company", "%", 100 - n("participacao_matriz"), 100 - n("participacao_matriz_c2")],
+        ["Resultado da matriz no Brasil antes da remessa", "Brazil parent company profit before remittance", "R$", c1.parentBrazilProfit, c2.parentBrazilProfit],
+        ["Resultado retido na filial/local", "Profit retained by branch/local company", "R$", c1.branchRetained, c2.branchRetained],
+        ["Retenção sobre dividendos", "Dividend withholding tax", "R$", c1.dividendWithholding, c2.dividendWithholding],
+        ["Custo cambial da remessa", "Foreign exchange cost of remittance", "R$", c1.remittanceCost, c2.remittanceCost],
+        ["Remessa líquida à matriz", "Net remittance to parent company", "R$", c1.netRemittance, c2.netRemittance],
+        ["Lucro líquido da exportação da matriz", "Parent company net export profit", "R$", c1.netExportProfit, c2.netExportProfit],
+        ["Margem líquida exportação / FOB convertido", "Net export margin / converted FOB", "%", c1.exportMargin * 100, c2.exportMargin * 100],
+        ["Lucro total da matriz (exportação + remessa)", "Total parent company profit (exports + remittance)", "R$", c1.netExportProfit + c1.netRemittance, c2.netExportProfit + c2.netRemittance],
+        ["Lucro global consolidado", "Consolidated global profit", "R$", c1.globalProfit, c2.globalProfit],
+        ["Lucro global consolidado por kit", "Consolidated global profit per kit", "R$/kit", c1.globalProfit / quantity, c2.globalProfit / quantity]
+    ];
+    function display(value, unit) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return label("Não disponível", "Not available");
+        if (unit === "USD" || unit === "USD/kit") return usd(value) + (unit === "USD/kit" ? "/kit" : "");
+        if (unit === "kits") return new Intl.NumberFormat(pt ? "pt-BR" : "en-US", {maximumFractionDigits: 0}).format(value);
+        if (unit === "%") return pct(value);
+        if (unit === "x") return Number(value).toFixed(2).replace(pt ? "." : "_", pt ? "," : ".") + "x";
+        return money(value) + (unit === "R$/kit" ? "/kit" : "");
+    }
+    const tableHeaders = pt
+        ? ["Indicador", "Unidade", "Cenário 1", "Cenário 2"]
+        : ["Metric", "Unit", "Scenario 1", "Scenario 2"];
+    const compareRows = comparisonData.map(row => [
+        pt ? row[0] : row[1],
+        pt ? row[2] : row[2].replace("R$", "BRL"),
+        display(row[3], row[2]),
+        display(row[4], row[2])
+    ]);
+    const dreNames = [
+        ["Receita bruta", "Gross revenue"], ["Devoluções, abatimentos e descontos", "Returns, allowances, and discounts"],
+        ["Tributos sobre vendas", "Sales taxes"], ["Receita líquida", "Net revenue"],
+        ["Custo das mercadorias vendidas (CMV)", "Cost of goods sold (COGS)"],
+        ["Operação / armazenagem variável", "Variable operations / warehousing"],
+        ["Opex fixo do período", "Fixed operating expenses for the period"], ["Lucro operacional", "Operating profit"],
+        ["Juros e despesas financeiras", "Interest and financial expenses"],
+        ["Resultado antes de IR/CSLL estimados", "Profit before estimated IR/CSLL"],
+        ...(isPresumedProfit ? [["IRPJ comercial sobre faturamento", "Commercial IRPJ on revenue"], ["Adicional de IRPJ", "Additional IRPJ"], ["CSLL comercial sobre faturamento", "Commercial CSLL on revenue"]] : [["IR/CSLL estimados", "Estimated IR/CSLL"]]),
+        ["Lucro líquido Brasil", "Brazil net profit"]
+    ];
+    const dreRows = dreNames.map(names => {
+        const row1 = c1.dre.find(item => item[0] === names[0]);
+        const row2 = c2.dre.find(item => item[0] === names[0]);
+        return [pt ? names[0] : names[1], row1 ? money(row1[2]) : label("N/A", "N/A"), row2 ? money(row2[2]) : label("N/A", "N/A")];
+    });
+    const compositionByName = new Map();
+    for (const item of import1.composition) compositionByName.set(item[0], [item[1], item[2], null]);
+    for (const item of import2.composition) {
+        const row = compositionByName.get(item[0]) || [item[1], null, null];
+        row[2] = item[2];
+        compositionByName.set(item[0], row);
+    }
+    const importRows = Array.from(compositionByName.entries()).map(([name, row]) => [
+        pt ? name : row[0],
+        row[1] === null ? label("Não disponível", "Not available") : money(row[1]),
+        row[2] === null ? label("Não disponível", "Not available") : money(row[2])
+    ]);
+    const execRows = [
+        [label("1. Subsidiária controlada", "1. Controlled subsidiary"), c1],
+        [label("2. Distribuidor Independente", "2. Independent distributor"), c2]
+    ].map(([name, c]) => [name, usd(c.fobUsd), money(c.netExportProfit), pct(c.exportMargin * 100), money(c.parentBrazilProfit), pct(c.grossRevenue ? c.parentBrazilProfit / c.grossRevenue * 100 : 0), money(c.netExportProfit + c.netRemittance), money(c.branchRetained), pct(c.grossRevenue ? c.branchRetained / c.grossRevenue * 100 : 0), money(c.globalProfit), money(c.globalProfit / quantity)]);
+    return {
+        summaryTitle: label("Resumo da DRE Operacional (Brasil)", "Brazil operating income statement summary"),
+        summary: [
+            {label: label("Faturamento Bruto (R$)", "Gross revenue (BRL)"), value: money(c1.grossRevenue)},
+            {label: label("Acomodação / Operador (R$)", "Logistics operator (BRL)"), value: money(c1.variableOperator)},
+            {label: label("Landed Cost (R$)", "Landed cost (BRL)"), value: money(import1.inventoryCost)},
+            {label: label("Lucro Operacional (R$)", "Operating profit (BRL)"), value: money(c1.operatingProfit)},
+            {label: label(`Impostos BR (${pct(c1.salesTaxes + c1.brazilTax && c1.grossRevenue ? (c1.salesTaxes + c1.brazilTax) / c1.grossRevenue * 100 : 0)})`, `Brazil taxes (${pct(c1.salesTaxes + c1.brazilTax && c1.grossRevenue ? (c1.salesTaxes + c1.brazilTax) / c1.grossRevenue * 100 : 0)})`), value: money(c1.salesTaxes + c1.brazilTax)},
+            {label: label("Lucro Líquido BR (100%)", "Brazil net profit (100%)"), value: money(c1.netBrazil)}
+        ],
+        charts: [{
+            title: label("Resultado por entidade e cenário", "Profit by entity and scenario"),
+            categories: [label("Cenário 1", "Scenario 1"), label("Cenário 2", "Scenario 2")],
+            series: [
+                {label: label("Resultado retido na filial/local", "Profit retained by branch/local company"), color: "#4e9a72", values: [c1.branchRetained, c2.branchRetained], formatted: [money(c1.branchRetained), money(c2.branchRetained)]},
+                {label: label("Remessa líquida à matriz", "Net remittance to parent company"), color: "#d78a36", values: [c1.netRemittance, c2.netRemittance], formatted: [money(c1.netRemittance), money(c2.netRemittance)]},
+                {label: label("Lucro líquido da exportação da matriz", "Parent company net export profit"), color: "#2878a0", values: [c1.netExportProfit, c2.netExportProfit], formatted: [money(c1.netExportProfit), money(c2.netExportProfit)]},
+                {label: label("Lucro global consolidado", "Consolidated global profit"), color: "#18364a", values: [c1.globalProfit, c2.globalProfit], formatted: [money(c1.globalProfit), money(c2.globalProfit)]}
+            ]
+        }],
+        tables: [
+            {title: label("Comparativo Executivo - Dois Cenários", "Executive comparison - Two scenarios"), headers: [
+                label("Cenário Societário / Comercial", "Business / ownership scenario"), label("FOB (USD)", "FOB (USD)"),
+                label("Lucro exportação (R$)", "Export profit (BRL)"), label("Margem exportação (%)", "Export margin (%)"),
+                label("Lucro matriz Brasil (R$)", "Brazil parent profit (BRL)"), label("Margem matriz (%)", "Parent margin (%)"),
+                label("Lucro total matriz (R$)", "Total parent profit (BRL)"), label("Lucro filial/local (R$)", "Branch/local profit (BRL)"),
+                label("Margem filial/local (%)", "Branch/local margin (%)"), label("Lucro global (R$)", "Global profit (BRL)"),
+                label("Lucro global/kit (R$)", "Global profit/kit (BRL)")
+            ], rows: execRows},
+            {title: label("Comparação detalhada dos cenários", "Detailed scenario comparison"), headers: tableHeaders, rows: compareRows},
+            {title: label("Composição da importação", "Import composition"), headers: [label("Item", "Item"), label("Cenário 1", "Scenario 1"), label("Cenário 2", "Scenario 2")], rows: importRows},
+            {title: label("DRE gerencial Brasil", "Brazil management income statement"), headers: [label("Conta", "Account"), label("Cenário 1", "Scenario 1"), label("Cenário 2", "Scenario 2")], rows: dreRows}
+        ]
+    };
+}
+function esc(value){return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));}
+function readInputs(){const values={};document.querySelectorAll("[data-key]").forEach(input=>{const key=input.dataset.key;if(input.type==="checkbox")values[key]=input.checked;else if(input.type==="number")values[key]=Number(input.value||0)/Number(input.dataset.scale||1);else values[key]=input.value;});return values;}
+function applyInputs(values){document.querySelectorAll("[data-key]").forEach(input=>{const key=input.dataset.key;if(!(key in values))return;if(input.type==="checkbox")input.checked=Boolean(values[key]);else if(input.type==="number")input.value=String(Number(values[key]||0)*Number(input.dataset.scale||1));else input.value=String(values[key]??"");});}
+function saveInputs(values){try{localStorage.setItem(SAVE_KEY,JSON.stringify(values));document.getElementById("save-status").textContent=TXT.saved;}catch(error){document.getElementById("save-status").textContent=TXT.saved_error;}}
+function cell(value){return `<td>${esc(value)}</td>`;}
+function renderTable(table){return `<section class="output-section"><h2>${esc(table.title)}</h2><div class="table-wrap"><table><thead><tr>${table.headers.map(header=>`<th>${esc(header)}</th>`).join("")}</tr></thead><tbody>${table.rows.map(row=>`<tr>${row.map(cell).join("")}</tr>`).join("")}</tbody></table></div></section>`;}
+function renderChart(chart){const max=Math.max(1,...chart.series.flatMap(series=>series.values.map(value=>Math.abs(Number(value)||0))));return `<section class="output-section"><h2>${esc(chart.title)}</h2><div class="chart-list">${chart.series.map(series=>series.values.map((value,index)=>`<div class="chart-row"><label>${esc(series.label)} · ${esc(chart.categories[index])}</label><div class="bar-track"><div class="bar" style="width:${Math.max(1,Math.abs(value)/max*100)}%;background:${esc(series.color)}"></div></div><strong class="chart-value">${esc(series.formatted[index])}</strong></div>`).join("")).join("")}</div></section>`;}
+function render(result){const kpis=`<section class="output-section"><h2>${esc(result.summaryTitle)}</h2><div class="kpis">${result.summary.map(item=>`<div class="kpi"><span>${esc(item.label)}</span><strong>${esc(item.value)}</strong></div>`).join("")}</div></section>`;document.getElementById("results-content").innerHTML=kpis+result.charts.map(renderChart).join("")+result.tables.map(renderTable).join("");document.getElementById("error-box").style.display="none";}
+function update(){try{const values=readInputs();saveInputs(values);render(calculate(values,LANGUAGE));}catch(error){const box=document.getElementById("error-box");box.textContent=error.message||String(error);box.style.display="block";}}
+document.getElementById("input-form").addEventListener("input",update);
+document.getElementById("input-form").addEventListener("change",update);
+document.getElementById("reset-inputs").addEventListener("click",()=>{try{localStorage.removeItem(SAVE_KEY);}catch(error){}applyInputs(DEFAULTS);update();});
+document.getElementById("export-inputs").addEventListener("click",()=>{const payload={model:MODEL_ID,version:1,values:readInputs()};const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=MODEL_ID+"_"+TXT.export_name+".json";link.click();URL.revokeObjectURL(link.href);});
+document.getElementById("import-file").addEventListener("change",async event=>{const file=event.target.files[0];if(!file)return;try{const payload=JSON.parse(await file.text());if(payload.model!==MODEL_ID||!payload.values)throw Error(TXT.import_error);applyInputs(payload.values);update();document.getElementById("save-status").textContent=TXT.import_ok;}catch(error){const box=document.getElementById("error-box");box.textContent=TXT.import_error;box.style.display="block";}event.target.value="";});
+try{const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");if(saved)applyInputs(saved);}catch(error){}
+update();
+</script></body></html>

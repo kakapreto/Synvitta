@@ -1,0 +1,1806 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synvitta3 · Matriz de Sensibilidade · Kits IVD · Lote de 1.440 unidades</title>
+<meta name="description" content="Análise de sensibilidade de custo, margem e remessa para o portfólio Synvitta de kits IVD e leitores ópticos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-main: #070a13;
+  --bg-card: rgba(13, 19, 34, 0.78);
+  --bg-card-hover: rgba(18, 26, 46, 0.92);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(0, 210, 255, 0.45);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --cyan: #00d2ff;
+  --cyan-glow: rgba(0, 210, 255, 0.25);
+  --emerald: #10b981;
+  --emerald-glow: rgba(16, 185, 129, 0.25);
+  --amber: #f59e0b;
+  --amber-glow: rgba(245, 158, 11, 0.25);
+  --rose: #f43f5e;
+  --rose-glow: rgba(244, 63, 94, 0.25);
+  --indigo: #6366f1;
+  --purple: #a855f7;
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.3);
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] {
+  --bg-main: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-hover: rgba(255, 255, 255, 0.98);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-focus: rgba(0, 150, 200, 0.5);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --cyan: #0284c7;
+  --cyan-glow: rgba(2, 132, 199, 0.15);
+  --emerald: #059669;
+  --emerald-glow: rgba(5, 150, 105, 0.15);
+  --amber: #d97706;
+  --amber-glow: rgba(217, 119, 6, 0.15);
+  --rose: #e11d48;
+  --rose-glow: rgba(225, 29, 72, 0.15);
+  --indigo: #4f46e5;
+  --purple: #9333ea;
+  --gold: #b45309;
+  --gold-glow: rgba(180, 83, 9, 0.2);
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  padding-bottom: 60px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+.ambient-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-1 { top: -100px; left: -100px; background: var(--cyan); }
+.glow-2 { top: 30%; right: -150px; background: var(--indigo); }
+.glow-3 { bottom: 100px; left: 20%; background: var(--gold); }
+
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 28px;
+  position: relative;
+  z-index: 1;
+}
+
+header {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 32px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  box-shadow: var(--shadow);
+}
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: rgba(0, 210, 255, 0.1);
+  border: 1px solid rgba(0, 210, 255, 0.3);
+  border-radius: 999px;
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+h1 {
+  font-size: clamp(22px, 2.5vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  background: linear-gradient(135deg, var(--text-primary) 40%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pill:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px var(--cyan-glow);
+  transform: translateY(-1px);
+}
+
+.btn-pill.primary {
+  background: linear-gradient(135deg, var(--cyan), var(--indigo));
+  color: #fff;
+  border: none;
+}
+
+/* Strategic Highlights Grid (Dual Callouts) */
+.dual-callout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.callout-box {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  border-radius: var(--radius-md);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.callout-box.parity {
+  border-color: rgba(0, 210, 255, 0.4);
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.08), rgba(99, 102, 241, 0.05));
+}
+
+.callout-box.security {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(244, 63, 94, 0.05));
+}
+
+.callout-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.callout-box.parity .callout-badge { background: var(--cyan); color: #070a13; }
+.callout-box.security .callout-badge { background: var(--amber); color: #070a13; }
+
+.callout-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.callout-target-val {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+}
+.callout-box.parity .callout-target-val { color: var(--cyan); }
+.callout-box.security .callout-target-val { color: var(--amber); }
+
+.callout-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.callout-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.c-stat span { display: block; font-size: 11px; color: var(--text-muted); }
+.c-stat strong { display: block; font-family: var(--font-mono); font-size: 13px; color: var(--text-primary); margin-top: 2px; }
+
+/* Big Decision Banner */
+.winner-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(0, 210, 255, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  border-radius: var(--radius-lg);
+  padding: 22px 28px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 10px 30px var(--emerald-glow);
+}
+
+.winner-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--emerald));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 0 24px var(--gold-glow);
+  flex-shrink: 0;
+}
+
+.winner-content h2 {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--emerald);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.winner-content p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.winner-stat {
+  text-align: right;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  padding-left: 24px;
+}
+.winner-stat-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gold);
+  font-family: var(--font-mono);
+}
+.winner-stat-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* Key Metrics Cards Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  position: relative;
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--card-accent, var(--cyan));
+}
+
+.kpi-card.optimum-highlight {
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 25px var(--gold-glow);
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow);
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.kpi-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.kpi-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--card-accent, var(--cyan));
+}
+
+.kpi-value {
+  font-size: clamp(20px, 1.8vw, 25px);
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.kpi-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.kpi-breakdown {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+}
+
+.breakdown-row strong {
+  color: var(--text-primary);
+}
+
+/* Section styling */
+.section {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  max-width: 850px;
+}
+
+/* Tabs & Switchers */
+.tab-group {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.tab-btn {
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover { color: var(--text-primary); }
+
+.tab-btn.active {
+  background: var(--cyan);
+  color: #070a13;
+  font-weight: 800;
+}
+
+/* 2D Heatmap Matrix Table */
+.matrix-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-top: 14px;
+}
+
+table.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 880px;
+}
+
+table.matrix-table th, table.matrix-table td {
+  padding: 10px 14px;
+  text-align: right;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+table.matrix-table th {
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+table.matrix-table th.col-corner {
+  text-align: left;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--cyan);
+}
+
+table.matrix-table th.col-header { text-align: right; }
+
+table.matrix-table td.row-header {
+  text-align: left;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text-primary);
+}
+
+.cell-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  display: block;
+}
+
+.cell-sub {
+  font-size: 10px;
+  opacity: 0.8;
+  display: block;
+  margin-top: 2px;
+}
+
+.cell-optimum {
+  position: relative;
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+  background: rgba(251, 191, 36, 0.22) !important;
+}
+
+.cell-parity {
+  position: relative;
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+  background: rgba(0, 210, 255, 0.22) !important;
+}
+
+.badge-optimum {
+  display: inline-block;
+  background: var(--gold);
+  color: #070a13;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 5px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.badge-parity {
+  display: inline-block;
+  background: var(--cyan);
+  color: #070a13;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 5px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.badge-security {
+  display: inline-block;
+  background: var(--amber);
+  color: #070a13;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 5px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* Charts Section */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 14px;
+}
+
+.chart-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.chart-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.svg-chart {
+  width: 100%;
+  height: 320px;
+  overflow: visible;
+}
+
+/* Interactive Simulator */
+.sim-panel {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-top: 14px;
+}
+
+.controls-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.control-value {
+  font-family: var(--font-mono);
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--cyan-glow);
+  transition: transform 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+.results-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.sim-result-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.sim-result-box.winner {
+  border-color: var(--gold);
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.2);
+}
+
+.sim-box-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sim-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 5px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.sim-row span:first-child { color: var(--text-muted); }
+.sim-row span:last-child { font-family: var(--font-mono); font-weight: 600; color: var(--text-primary); }
+
+.sim-row.total {
+  border-bottom: none;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.sim-row.total span:first-child { font-weight: 800; color: var(--gold); }
+.sim-row.total span:last-child { font-size: 16px; color: var(--gold); font-weight: 800; }
+
+/* Advisory Cards */
+.advisory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.advisory-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  position: relative;
+}
+
+.advisory-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.advisory-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.advisory-card ul {
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.advisory-card ul li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.advisory-card ul li::before {
+  content: "✦";
+  color: var(--cyan);
+}
+
+/* Detailed Comparison Table */
+.data-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-top: 14px;
+}
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+table.data-table th, table.data-table td {
+  padding: 10px 12px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+table.data-table th {
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+table.data-table th:first-child, table.data-table td:first-child { text-align: left; }
+
+table.data-table tr:hover { background: rgba(255, 255, 255, 0.04); }
+
+table.data-table tr.row-optimum {
+  background: rgba(251, 191, 36, 0.12) !important;
+  font-weight: 700;
+}
+table.data-table tr.row-parity {
+  background: rgba(0, 210, 255, 0.12) !important;
+}
+table.data-table tr.row-security {
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+footer {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 1100px) {
+  .dual-callout-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .winner-banner { grid-template-columns: 1fr; }
+  .winner-stat { text-align: left; border-left: none; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; }
+  .advisory-grid { grid-template-columns: 1fr; }
+  .sim-panel { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 650px) {
+  .container { padding: 16px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient-glow glow-1"></div>
+<div class="ambient-glow glow-2"></div>
+<div class="ambient-glow glow-3"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div>
+      <div class="brand-badge">Synvitta3 · Matriz de Sensibilidade · Cenário 1 × Cenário 2</div>
+      <h1>Sensibilidade do portfólio Synvitta: kits IVD e leitores</h1>
+      <p>1.440 kits · 160 leitores · Lucro Presumido · Câmbio R$ 5,60</p>
+    </div>
+    <div class="header-controls">
+      <button class="btn-pill" id="currency-toggle" onclick="toggleCurrency()" title="Alternar moeda dos valores">
+        <span>💱</span> <span id="currency-text">Valores em R$</span>
+      </button>
+      <button class="btn-pill" id="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">🌙</span> <span id="theme-text">Modo Claro</span>
+      </button>
+      <button class="btn-pill primary" onclick="window.print()">
+        <span>🖨️</span> Imprimir Relatório
+      </button>
+    </div>
+  </header>
+
+  <!-- Veredito -->
+  <div class="winner-banner">
+    <div class="winner-icon">🏆</div>
+    <div class="winner-content">
+      <h2>Sensibilidade do resultado distribuível do lote</h2>
+      <p id="verdict-text"></p>
+    </div>
+    <div class="winner-stat">
+      <div class="winner-stat-val" id="verdict-min-adv"></div>
+      <div class="winner-stat-lbl" id="verdict-min-lbl"></div>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Interactive 2D Sensitivity Heatmap Matrix -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">📊 Matriz Bidimensional: FOB × Preço de Venda do Kit IVD</h2>
+        <p class="section-desc">
+          Premissas e fórmulas alinhadas ao arquivo synvitta3_report.htm. A matriz varia o FOB total dos 1.440 kits entre US$ 100 mil e US$ 1 milhão; os 160 leitores permanecem nos valores do relatório. O resultado da matriz inclui o lucro líquido da exportação e a remessa líquida do Brasil.
+        </p>
+      </div>
+      <div class="tab-group" id="matrix-mode-selector">
+        <button class="tab-btn active" onclick="setMatrixMode('c1_parent')">Resultado Matriz (C1)</button>
+        <button class="tab-btn" onclick="setMatrixMode('c2_parent')">Resultado Matriz (C2)</button>
+        <button class="tab-btn" onclick="setMatrixMode('advantage')">Diferença C1 − C2 (Δ <span class="cur-sym">R$</span>)</button>
+        <button class="tab-btn" onclick="setMatrixMode('c1_margin')">Margem total da Matriz (%)</button>
+      </div>
+    </div>
+
+    <div class="matrix-container">
+      <table class="matrix-table" id="heatmap-table">
+        <!-- Rendered dynamically via JavaScript -->
+      </table>
+    </div>
+  </div>
+
+  <!-- Interactive Sensitivity Curves -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">📈 Curvas de Sensibilidade da Remessa Potencial</h2>
+        <p class="section-desc">
+          FOB total dos kits de US$ 100 mil a US$ 1 milhão (1.440 unidades); os 160 leitores permanecem fixos. Preço-base, câmbio, tributos, custos, OPEX e demais premissas vêm do relatório. O resultado inclui o lucro líquido da exportação e a remessa líquida do Brasil.</p>
+      </div>
+      <div class="tab-group">
+        <span style="font-size: 12px; color: var(--text-muted); align-self: center; margin-right: 8px;">Preço-base: kit R$ 9.600,00 · leitor R$ 280.000,00 · câmbio: R$ 5,60</span>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <!-- Chart 1: Lucro Total da Matriz (R$) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Resultado líquido da matriz (exportação + remessa)</span>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-color" style="background: var(--cyan);"></div> <span id="c1-share-legend">Resultado matriz C1 (75%)</span></div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--gold);"></div> Lucro líquido da exportação</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--emerald);"></div> Parcela de remessa C1</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--rose);"></div> Resultado matriz C2</div>
+          </div>
+        </div>
+        <div id="chart-profit-container">
+          <svg class="svg-chart" id="chart-profit" viewBox="0 0 540 280"></svg>
+        </div>
+      </div>
+
+      <!-- Chart 2: Margens de Lucro (%) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Margens líquidas sobre a venda bruta (%)</span>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-color" style="background: var(--cyan);"></div> Resultado matriz C1 / venda bruta</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--emerald);"></div> Resultado Brasil / venda bruta</div>
+            <div class="legend-item"><div class="legend-color" style="background: var(--rose);"></div> Resultado matriz C2 / venda bruta</div>
+          </div>
+        </div>
+        <div id="chart-margin-container">
+          <svg class="svg-chart" id="chart-margin" viewBox="0 0 540 280"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Simulation Sandbox -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">🎛️ Simulador Interativo de Sensibilidade em Tempo Real</h2>
+        <p class="section-desc">
+          Mova os controles deslizantes para recalcular instantaneamente o lucro da Matriz nos dois cenários.
+        </p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-pill" onclick="setFobQuick(100000)">FOB total US$ 100 mil</button>
+        <button class="btn-pill" onclick="setFobQuick(500000)">FOB total US$ 500 mil</button>
+        <button class="btn-pill" onclick="setFobQuick(1000000)">FOB total US$ 1 milhão</button>
+        <button class="btn-pill" onclick="resetSimParams()">↺ Premissas do relatório</button>
+      </div>
+    </div>
+
+    <div class="sim-panel">
+      <div class="controls-col">
+        <div class="control-item">
+          <div class="control-label">
+            <span>FOB total dos kits (USD)</span>
+            <span class="control-value" id="val-fob">US$ 288.000,00</span>
+          </div>
+          <input type="range" id="slider-fob" min="100000" max="1000000" step="10000" value="288000" oninput="updateSim()">
+        </div>
+
+        <div class="control-item">
+          <div class="control-label">
+            <span>Preço de Venda Brasil (R$/kit)</span>
+            <span class="control-value" id="val-price">R$ 9.600,00</span>
+          </div>
+          <input type="range" id="slider-price" min="5000" max="20000" step="100" value="9600" oninput="updateSim()">
+        </div>
+
+        <div class="control-item">
+          <div class="control-label">
+            <span>Taxa de Câmbio (USD/BRL)</span>
+            <span class="control-value" id="val-exchange">R$ 5,60</span>
+          </div>
+          <input type="range" id="slider-exchange" min="4.50" max="7.00" step="0.10" value="5.60" oninput="updateSim()">
+        </div>
+
+        <div class="control-item">
+          <div class="control-label">
+            <span>Participação da Matriz no Brasil</span>
+            <span class="control-value" id="val-share">75%</span>
+          </div>
+          <input type="range" id="slider-share" min="50" max="100" step="5" value="75" oninput="updateSim()">
+        </div>
+      </div>
+
+      <div class="results-col">
+        <div class="sim-result-box winner">
+          <div class="sim-box-title">
+            <span id="c1-share-title">Cenário 1: Subsidiária (75%)</span>
+            <span class="badge-optimum" id="c1-share-badge" style="background: var(--gold); color: #000;">PARTICIPAÇÃO 75%</span>
+          </div>
+          <div class="sim-row"><span>FOB Total do portfólio:</span><span id="sim-c1-fob-total">US$ 1.088.000,00</span></div>
+          <div class="sim-row"><span>Lucro líquido Brasil após OPEX e IRPJ/CSLL estimados:</span><span id="sim-c1-net-br">R$ 0,00</span></div>
+          <div class="sim-row"><span>Margem líquida Brasil:</span><span id="sim-c1-sub-margin" style="color: var(--amber);">0,00%</span></div>
+          <div class="sim-row"><span>Resultado não atribuído à Matriz:</span><span id="sim-c1-partner-retained" style="color: var(--emerald);">R$ 0,00</span></div>
+          <div class="sim-row"><span>Lucro líquido da exportação:</span><span id="sim-c1-net-exp" style="color: var(--cyan);">R$ 0,00</span></div>
+          <div class="sim-row"><span>Remessa líquida do Brasil (75%):</span><span id="sim-c1-remit" style="color: var(--emerald);">R$ 0,00</span></div>
+          <div class="sim-row total"><span>Resultado total da Matriz:</span><span id="sim-c1-total" style="color: var(--gold);">R$ 0,00</span></div>
+          <div class="sim-row" style="border: none;"><span>Resultado matriz / venda bruta:</span><span id="sim-c1-margin" style="color: var(--cyan);">0,00%</span></div>
+        </div>
+
+        <div class="sim-result-box">
+          <div class="sim-box-title">
+            <span>Cenário 2: Distribuidor (0%)</span>
+            <span class="badge-optimum" style="background: var(--text-muted); color: #fff;">INDEPENDENTE</span>
+          </div>
+          <div class="sim-row"><span>FOB Total do portfólio:</span><span id="sim-c2-fob-total">US$ 1.088.000,00</span></div>
+          <div class="sim-row"><span>Lucro líquido Brasil após OPEX e IRPJ/CSLL estimados:</span><span id="sim-c2-net-dist">R$ 0,00</span></div>
+          <div class="sim-row"><span>Margem líquida Brasil:</span><span id="sim-c2-dist-margin">0,00%</span></div>
+          <div class="sim-row"><span>Lucro líquido da exportação:</span><span id="sim-c2-net-exp">R$ 0,00</span></div>
+          <div class="sim-row"><span>Remessa à Matriz (0%):</span><span id="sim-c2-remit" style="color: var(--rose);">R$ 0,00</span></div>
+          <div class="sim-row total"><span>Resultado total da Matriz:</span><span id="sim-c2-total" style="color: var(--rose);">R$ 0,00</span></div>
+          <div class="sim-row" style="border: none;"><span>Resultado matriz / venda bruta:</span><span id="sim-c2-margin" style="color: var(--rose);">0,00%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Step-by-Step Table -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">📋 Tabela Analítica: FOB total dos kits de US$ 100 mil a US$ 1 milhão</h2>
+        <p class="section-desc">
+          Resultado do portfólio salvo (kits + leitores fixos) após tributos de venda, OPEX e IRPJ/CSLL estimados; a sensibilidade varia o FOB dos kits.
+        </p>
+      </div>
+    </div>
+
+    <div class="data-table-container">
+      <table class="data-table" id="detailed-data-table">
+        <thead>
+          <tr>
+            <th>FOB por kit (USD)</th>
+            <th>FOB kits total (USD)</th>
+            <th>FOB leitores total (USD)</th>
+            <th>Landed cost kits (R$/un.)</th>
+            <th>Landed cost leitores (R$/un.)</th>
+            <th>Desembolso kits (R$/un.)</th>
+            <th>Desembolso leitores (R$/un.)</th>
+            <th>Lucro líquido da exportação</th>
+            <th id="c1-share-head">Remessa Brasil (75%)</th>
+            <th>Resultado Matriz C1</th>
+            <th>Margem total Matriz C1</th>
+            <th>Lucro líquido Brasil</th>
+            <th>Margem líquida Brasil</th>
+            <th>Resultado não atribuído à Matriz</th>
+            <th>Resultado Matriz C2</th>
+            <th>Margem total Matriz C2</th>
+            <th>Vantagem C1 (Δ <span class="cur-sym">R$</span>)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Deep Strategic Advisory Section -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">🎯 Notas de leitura e limites da análise</h2>
+        <p class="section-desc">
+          A sensibilidade varia o FOB dos kits; as demais premissas do portfólio permanecem constantes.
+        </p>
+      </div>
+    </div>
+
+    <div class="advisory-grid">
+      <div class="advisory-card">
+        <h3>1. Como ler os cenários</h3>
+        <p>A matriz compara o <strong>resultado líquido total da matriz</strong> conforme o relatório: lucro líquido da exportação mais remessa líquida do Brasil.</p>
+        <ul>
+          <li><strong>Cenário 1:</strong> considera participação da matriz de 75%, retenção de dividendos de 10% e custo de remessa de 1%.</li>
+          <li><strong>Cenário 2:</strong> distribuidor independente, sem participação da matriz no resultado brasileiro.</li>
+          <li>Resultado Brasil inclui o OPEX, o período e as alíquotas configurados, bem como IRPJ/CSLL estimados segundo o regime de Lucro Presumido; não constitui previsão financeira.</li>
+          <li>O FOB, preço de venda e custos dos leitores são mantidos fixos nos valores atuais; apenas o FOB dos kits varia.</li>
+        </ul>
+      </div>
+
+      <div class="advisory-card">
+        <h3>2. Resultado no intervalo analisado</h3>
+        <ul id="advisory-range"></ul>
+      </div>
+
+      <div class="advisory-card">
+        <h3>3. Controle e risco no Cenário 2</h3>
+        <ul>
+          <li>O relatório não confirma quem será titular do registro sanitário; a titularidade deve ser definida separadamente.</li>
+          <li>O custo de capital de giro não é incluído. A recuperação temporal dos créditos de ICMS/IPI não é projetada.</li>
+          <li>O ICMS-importação é tratado como recuperável no landed cost, mas permanece como desembolso de caixa no desembaraço.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Synvitta3 · Matriz de Sensibilidade · Kits IVD e leitores ópticos · 2026</p>
+  </footer>
+
+</div>
+
+<script>
+const INITIAL_P = {"ncm_codigo": "3822.19.90", "pais_origem": "Estados Unidos", "local_origem": "Alachua, Florida", "uf_destino": "SP", "incoterm": "EXW", "regime_tributario": "Lucro Presumido", "registro_sanitario": "ANVISA/AFE", "quantidade": 1000, "quantidade_vendida": 1000, "cambio": 5.6, "preco_fob_base": 200.0, "custo_fabricacao_usd": 100.0, "receita_por_kit": 9598.4, "meses_operacao": 3, "kits_por_volume": 40, "comprimento": 61.0, "largura": 61.0, "altura": 50.8, "peso_bruto_total": 774.0, "divisor_volumetrico": 4726, "modal": "A\u00e9reo", "calculo_frete": "Valor total informado", "frete_usd": 6400.0, "tarifa_wm": 0.0, "tarifa_frete_kg": 0.0, "tarifa_m3": 0.0, "seguro_pct": 0.25, "ajustes_aduaneiros_brl": 0.0, "frete_interno_brl": 0.0, "modo_custos_importacao": "Detalhado", "aliq_ii": 0.0, "aliq_ipi": 0.0, "aliq_pis": 0.21, "aliq_cofins": 0.965, "aliq_cbs": 0.0, "aliq_ibs": 0.0, "multiplo_base_cbs_ibs": 1.0, "aliq_icms": 0.0, "aliq_afrmm": 0.0, "antidumping_brl": 0.0, "despesas_na_base_icms": 0.0, "custo_armazenagem": 11299.62, "custo_capatazia": 2500.0, "custo_despachante": 4500.0, "taxa_siscomex": 136.53, "taxas_terminal": 600.0, "honorarios_agente_carga": 1100.0, "licencas_inspecao": 1637.7, "outras_despesas_importacao": 1500.0, "custo_importacao_consolidado_brl": 0.0, "credita_ipi": false, "credita_pis": false, "credita_cofins": false, "credita_cbs_ibs": false, "credita_icms": false, "devolucoes_descontos": 0.0, "modo_tributos_venda": "Detalhado", "aliq_icms_venda": 4.0, "aliq_pis_venda": 0.65, "aliq_cofins_venda": 3.0, "aliq_outros_venda": 0.0, "aliq_venda_consolidada": 0.0, "operador_pct": 3.0, "modo_opex": "Detalhado", "opex_pessoal": 90000.0, "opex_aluguel": 25000.0, "opex_utilidades": 10000.0, "opex_servicos_profissionais": 15000.0, "opex_comercial_marketing": 30000.0, "opex_sistemas": 5000.0, "opex_seguros": 5000.0, "opex_depreciacao": 10000.0, "opex_administrativo": 5000.0, "opex_outros": 5000.0, "opex_consolidado_mensal": 200000.0, "juros_brl": 0.0, "aliq_irpj_faturamento": 1.2, "aliq_csll_faturamento": 1.08, "base_presumida_irpj": 8.0, "aliq_adicional_irpj": 10.0, "limite_adicional_irpj_mensal": 20000.0, "aliq_ir_csll": 32.0, "aliq_federal_eua": 21.0, "aliq_fl": 5.5, "rateio_fl": 100.0, "opex_matriz_usd": 350.0, "participacao_matriz": 75, "retencao_dividendos": 10.0, "custo_remessa": 1.0, "preco_fob_c2": 200.0, "quantidade_vendida_c2": 1000, "receita_por_kit_c2": 9598.4, "fator_opex_c2": 1.0, "participacao_matriz_c2": 0};
+Object.assign(INITIAL_P, {
+  quantidade: 1440, quantidade_vendida: 1440, cambio: 5.5, preco_fob_base: 200,
+  custo_fabricacao_usd: 200, receita_por_kit: 2683.50, meses_operacao: 1,
+  frete_usd: 12750, seguro_pct: 0.399002493765586,
+  aliq_ii: 8, aliq_ipi: 0, aliq_pis: 0, aliq_cofins: 0, aliq_icms: 18,
+  despesas_na_base_icms: 268, credita_icms: true,
+  custo_armazenagem: 0, custo_capatazia: 0, custo_despachante: 0,
+  taxa_siscomex: 0, taxas_terminal: 0, honorarios_agente_carga: 0,
+  frete_interno_brl: 0,
+  licencas_inspecao: 268, outras_despesas_importacao: 22728.8,
+  aliq_icms_venda: 18, aliq_pis_venda: 0.65, aliq_cofins_venda: 3,
+  operador_pct: 0, modo_opex: "Detalhado",
+  opex_pessoal: 0, opex_aluguel: 0, opex_utilidades: 0,
+  opex_servicos_profissionais: 0, opex_comercial_marketing: 0, opex_sistemas: 0,
+  opex_seguros: 0, opex_depreciacao: 0, opex_administrativo: 0, opex_outros: 0,
+  juros_brl: 0, aliq_irpj_faturamento: 1.2, aliq_csll_faturamento: 1.08,
+  base_presumida_irpj: 8, aliq_adicional_irpj: 10,
+  limite_adicional_irpj_mensal: 20000, aliq_ir_csll: 32,
+  ano_calendario: 2026, mes_inicio_periodo: 1,
+  receita_acumulada_ano_antes_periodo: 0,
+  regime_tributario: "Lucro Presumido",
+  participacao_matriz: 75, retencao_dividendos: 10, custo_remessa: 1,
+  p2_ativo: true, nome_p2: "Leitor Óptico", ncm_p2: "9027.50.20",
+  quantidade_p2: 160, quantidade_vendida_p2: 160,
+  preco_fob_p2: 5000, receita_por_kit_p2: 68765.37, custo_fabricacao_usd_p2: 2000,
+  frete_usd_p2: 3250, seguro_pct_p2: 0.497976968565204,
+  aliq_ii_p2: 14, aliq_ipi_p2: 9.75, aliq_pis_p2: 2.1, aliq_cofins_p2: 9.65,
+  aliq_icms_p2: 18, despesas_na_base_icms_p2: 268,
+  credita_ipi_p2: true, credita_icms_p2: true,
+  licencas_inspecao_p2: 268, outras_despesas_importacao_p2: 19866.4,
+  aliq_icms_venda_p2: 18, aliq_pis_venda_p2: 0.65, aliq_cofins_venda_p2: 3,
+  operador_pct_p2: 0, devolucoes_descontos: 0, devolucoes_descontos_p2: 0,
+  participacao_matriz_c2: 0, fator_opex_c2: 1
+});
+
+// Premissas finais reproduzidas de synvitta3_report.htm.
+Object.assign(INITIAL_P, {
+  quantidade: 1440, quantidade_vendida: 1440, cambio: 5.6,
+  preco_fob_base: 200, custo_fabricacao_usd: 100, receita_por_kit: 9600,
+  meses_operacao: 1, frete_usd: 6500, frete_origem_usd: 1000,
+  despacho_miami_usd: 250, locacao_rap_usd: 5000, seguro_pct: 0.25,
+  despacho_na_va_usd: 0, locacao_na_va_usd: 0, seguro_apos_pct: 0,
+  acrescimos_va_usd: 0, ajustes_aduaneiros_brl: 0, frete_interno_brl: 1200,
+  modo_custos_importacao: 'Detalhado', aliq_ii: 0, aliq_ipi: 0,
+  aliq_pis: 0, aliq_cofins: 0, cbs_ibs_recolher: 0, aliq_icms: 0,
+  aliq_afrmm: 0, antidumping_brl: 0, despesas_na_base_icms: 0,
+  custo_armazenagem: 6000, custo_capatazia: 0, custo_despachante: 3500,
+  taxa_siscomex: 115, taxas_terminal: 0, honorarios_agente_carga: 0,
+  licencas_inspecao: 0, outras_despesas_importacao: 0, custo_anvisa: 268,
+  custo_hub: 0, outras_despesas_aduaneiras: 0, iof_cambio: 0,
+  credita_ipi: false, credita_pis: false, credita_cofins: false,
+  credita_cbs_ibs: false, credita_icms: false,
+  aliq_icms_venda: 4, aliq_pis_venda: 0.65, aliq_cofins_venda: 3,
+  aliq_outros_venda: 0, operador_pct: 4,
+  modo_opex: 'Consolidado', opex_consolidado_mensal: 200000,
+  juros_brl: 0, aliq_irpj_faturamento: 1.2, aliq_csll_faturamento: 1.08,
+  base_presumida_irpj: 8, aliq_adicional_irpj: 10,
+  limite_adicional_irpj_mensal: 20000, aliq_ir_csll: 32,
+  aliq_federal_eua: 21, aliq_fl: 5.5, rateio_fl: 100, opex_matriz_usd: 0,
+  participacao_matriz: 75, retencao_dividendos: 10, custo_remessa: 1,
+  ano_calendario: 2026, mes_inicio_periodo: 1,
+  receita_acumulada_ano_antes_periodo: 0,
+  preco_fob_c2: 200, quantidade_vendida_c2: 1440,
+  receita_por_kit_c2: 9600, fator_opex_c2: 1, participacao_matriz_c2: 0,
+  p2_ativo: true, quantidade_p2: 160, quantidade_vendida_p2: 160,
+  modal_p2: 'Aéreo', modo_tributos_venda: 'Detalhado',
+  modo_tributos_venda_p2: 'Detalhado',
+  preco_fob_p2: 5000, custo_fabricacao_usd_p2: 2000,
+  receita_por_kit_p2: 280000, frete_usd_p2: 2500,
+  frete_origem_usd_p2: 500, despacho_miami_usd_p2: 250,
+  locacao_rap_usd_p2: 0, seguro_pct_p2: 0.249066,
+  despacho_na_va_usd_p2: 0, locacao_na_va_p2: 0, seguro_apos_pct_p2: 0,
+  acrescimos_va_usd_p2: 0, ajustes_aduaneiros_brl_p2: 0,
+  frete_interno_brl_p2: 800, modo_custos_importacao_p2: 'Detalhado',
+  aliq_ii_p2: 14, aliq_ipi_p2: 9.75, aliq_pis_p2: 2.1,
+  aliq_cofins_p2: 9.65, cbs_ibs_recolher_p2: 0, aliq_icms_p2: 18,
+  aliq_afrmm_p2: 0, antidumping_brl_p2: 0, despesas_na_base_icms_p2: 0,
+  custo_armazenagem_p2: 15000, custo_capatazia_p2: 0,
+  custo_despachante_p2: 3500, taxa_siscomex_p2: 115,
+  taxas_terminal_p2: 0, honorarios_agente_carga_p2: 0,
+  licencas_inspecao_p2: 0, outras_despesas_importacao_p2: 0,
+  custo_anvisa_p2: 268, custo_hub_p2: 0,
+  outras_despesas_aduaneiras_p2: 0, iof_cambio_p2: 0,
+  credita_ipi_p2: true, credita_pis_p2: false,
+  credita_cofins_p2: false, credita_cbs_ibs_p2: false, credita_icms_p2: true,
+  devolucoes_descontos: 0, devolucoes_descontos_p2: 0,
+  aliq_icms_venda_p2: 18, aliq_pis_venda_p2: 0.65,
+  aliq_cofins_venda_p2: 3, aliq_outros_venda_p2: 0, operador_pct_p2: 0
+});
+
+let currentSim = {
+  fob: 288000,
+  price: 9600,
+  exchange: 5.60,
+  share: 75.0,
+  quantity: 1440.0
+};
+
+let currentMatrixMode = 'c1_parent';
+
+function calculateImportCost(fobPerUnit, quantity, suffix, exchange) {
+  const p = INITIAL_P;
+  const value = key => Number(p[key + suffix] || 0);
+  const rate = key => value(key) / 100;
+  const fobUsd = fobPerUnit * quantity;
+  const freightUsd = value('frete_usd');
+  const originFreightUsd = value('frete_origem_usd');
+  const clearanceUsd = value('despacho_miami_usd');
+  const rentalUsd = value('locacao_rap_usd');
+  const insuranceTotal = (fobUsd + originFreightUsd + freightUsd) * rate('seguro_pct');
+  const insuranceAfter = insuranceTotal * rate('seguro_apos_pct');
+  const clearanceInVaUsd = value('despacho_na_va_usd');
+  const rentalInVaUsd = value('locacao_na_va_usd');
+  const customsValue =
+    (fobUsd + originFreightUsd + freightUsd + clearanceInVaUsd + rentalInVaUsd) * exchange +
+    (insuranceTotal - insuranceAfter) * exchange +
+    value('acrescimos_va_usd') * exchange + value('ajustes_aduaneiros_brl');
+  const excludedCosts =
+    (clearanceUsd - clearanceInVaUsd + rentalUsd - rentalInVaUsd + insuranceAfter) * exchange;
+  const detailed = p['modo_custos_importacao' + suffix] === 'Detalhado';
+  const ii = detailed ? customsValue * rate('aliq_ii') : 0;
+  const ipi = detailed ? (customsValue + ii) * rate('aliq_ipi') : 0;
+  const pisImport = detailed ? customsValue * rate('aliq_pis') : 0;
+  const cofinsImport = detailed ? customsValue * rate('aliq_cofins') : 0;
+  const cbsIbs = detailed ? value('cbs_ibs_recolher') : 0;
+  const afrmm = detailed && p['modal' + suffix] === 'Marítimo'
+    ? freightUsd * exchange * rate('aliq_afrmm') : 0;
+  const icmsRate = rate('aliq_icms');
+  const icmsBaseBefore = customsValue + ii + ipi + pisImport + cofinsImport + afrmm +
+    (detailed ? value('antidumping_brl') + value('taxa_siscomex') +
+      value('despesas_na_base_icms') + value('iof_cambio') : 0);
+  const icms = detailed && icmsRate < 1
+    ? icmsBaseBefore / (1 - icmsRate) * icmsRate : 0;
+  const importTaxes = detailed
+    ? ii + ipi + pisImport + cofinsImport + cbsIbs + icms + afrmm +
+      value('antidumping_brl') + value('iof_cambio')
+    : value('custo_importacao_consolidado_brl');
+  const dispatch = detailed
+    ? ['custo_armazenagem', 'custo_capatazia', 'custo_despachante', 'taxa_siscomex',
+      'taxas_terminal', 'honorarios_agente_carga', 'licencas_inspecao',
+      'outras_despesas_importacao', 'custo_anvisa', 'custo_hub',
+      'outras_despesas_aduaneiras'].reduce((sum, key) => sum + value(key), 0)
+    : 0;
+  const credits = detailed
+    ? (p['credita_ipi' + suffix] ? ipi : 0) +
+      (p.regime_tributario !== 'Lucro Presumido' && p['credita_pis' + suffix] ? pisImport : 0) +
+      (p.regime_tributario !== 'Lucro Presumido' && p['credita_cofins' + suffix] ? cofinsImport : 0) +
+      (p['credita_cbs_ibs' + suffix] ? cbsIbs : 0) +
+      (p['credita_icms' + suffix] ? icms : 0)
+    : 0;
+  const outlay = customsValue + excludedCosts + importTaxes + dispatch + value('frete_interno_brl');
+  const inventoryCost = Math.max(outlay - credits, 0);
+  return { fobUsd, customsValue, inventoryCost, cashOutlay: outlay };
+}
+
+function calculateScenario(fobTotal, price, exchange, share, scenarioNum) {
+  const p = INITIAL_P;
+  const value = key => Number(p[key] || 0);
+  const rate = key => value(key) / 100;
+  const quantity = currentSim.quantity;
+  const readerQuantity = value('quantidade_p2');
+  const fobPerKit = fobTotal / quantity;
+  const kitImport = calculateImportCost(fobPerKit, quantity, '', exchange);
+  const readerImport = calculateImportCost(value('preco_fob_p2'), readerQuantity, '_p2', exchange);
+  const fobUsd = kitImport.fobUsd + readerImport.fobUsd;
+  const kitSold = Math.min(quantity, value('quantidade_vendida'));
+  const readerSold = Math.min(readerQuantity, value('quantidade_vendida_p2'));
+  const cogs = kitImport.inventoryCost / quantity * kitSold +
+    readerImport.inventoryCost / readerQuantity * readerSold;
+  const kitGrossRevenue = price * kitSold;
+  const readerGrossRevenue = value('receita_por_kit_p2') * readerSold;
+  const grossRevenue = kitGrossRevenue + readerGrossRevenue;
+  const kitCommercialRevenue = Math.max(kitGrossRevenue - value('devolucoes_descontos'), 0);
+  const readerCommercialRevenue = Math.max(readerGrossRevenue - value('devolucoes_descontos_p2'), 0);
+  const commercialRevenue = kitCommercialRevenue + readerCommercialRevenue;
+  function salesTaxes(revenue, suffix) {
+    const icms = revenue * rate('aliq_icms_venda' + suffix);
+    if (p['modo_tributos_venda' + suffix] === 'Consolidado') {
+      return revenue * rate('aliq_venda_consolidada' + suffix);
+    }
+    const contributionBase = Math.max(revenue - icms, 0);
+    return icms + contributionBase * (rate('aliq_pis_venda' + suffix) +
+      rate('aliq_cofins_venda' + suffix)) +
+      revenue * rate('aliq_outros_venda' + suffix);
+  }
+  const kitSalesTaxes = salesTaxes(kitCommercialRevenue, '');
+  const readerSalesTaxes = salesTaxes(readerCommercialRevenue, '_p2');
+  const salesTaxTotal = kitSalesTaxes + readerSalesTaxes;
+  const kitNetRevenue = kitCommercialRevenue - kitSalesTaxes;
+  const readerNetRevenue = readerCommercialRevenue - readerSalesTaxes;
+  const netRevenue = kitNetRevenue + readerNetRevenue;
+  const variableOperator = kitNetRevenue * rate('operador_pct') +
+    readerNetRevenue * rate('operador_pct_p2');
+  const monthlyOpex = p.modo_opex === 'Consolidado'
+    ? value('opex_consolidado_mensal')
+    : ['opex_pessoal', 'opex_aluguel', 'opex_utilidades', 'opex_servicos_profissionais',
+      'opex_comercial_marketing', 'opex_sistemas', 'opex_seguros', 'opex_depreciacao',
+      'opex_administrativo', 'opex_outros'].reduce((sum, key) => sum + value(key), 0);
+  const opex = monthlyOpex * value('meses_operacao') *
+    (scenarioNum === 1 ? 1 : value('fator_opex_c2'));
+  const operatingProfit = netRevenue - cogs - variableOperator - opex;
+  const profitBeforeTax = operatingProfit - value('juros_brl');
+  let brazilTax = 0;
+  if (p.regime_tributario === 'Lucro Presumido') {
+    const irpj = commercialRevenue * rate('aliq_irpj_faturamento');
+    const additionalIrpj = Math.max(
+      commercialRevenue * rate('base_presumida_irpj') -
+        value('limite_adicional_irpj_mensal') * value('meses_operacao'), 0
+    ) * rate('aliq_adicional_irpj');
+    const csll = commercialRevenue * rate('aliq_csll_faturamento');
+    const period = Math.max(1, value('meses_operacao'));
+    const year = value('ano_calendario');
+    const startMonth = value('mes_inicio_periodo');
+    const monthCount = Math.ceil(period);
+    if (!Number.isInteger(year) || year < 1900 || !Number.isInteger(startMonth) ||
+      startMonth < 1 || startMonth > 12 || period > 12 ||
+      startMonth + monthCount - 1 > 12 || value('receita_acumulada_ano_antes_periodo') < 0) {
+      throw new RangeError('As premissas fiscais precisam caber em um ano-calendário válido.');
+    }
+    let accumulatedRevenue = value('receita_acumulada_ano_antes_periodo');
+    let lc224IrpjRevenue = 0;
+    let lc224CsllRevenue = 0;
+    if (year >= 2026) {
+      for (let index = 0; index < monthCount; index++) {
+        const monthFraction = Math.min(1, period - index);
+        const monthlyRevenue = commercialRevenue / period * monthFraction;
+        const aboveThreshold = Math.max(
+          0, Math.min(monthlyRevenue, accumulatedRevenue + monthlyRevenue - 5000000)
+        );
+        accumulatedRevenue += monthlyRevenue;
+        lc224IrpjRevenue += aboveThreshold;
+        if (year > 2026 || startMonth + index >= 4) lc224CsllRevenue += aboveThreshold;
+      }
+    }
+    const regularIrpjBase = commercialRevenue * rate('base_presumida_irpj');
+    const increasedIrpjBase = lc224IrpjRevenue * rate('base_presumida_irpj') * 0.10;
+    const regularAdditionalBase = Math.max(
+      regularIrpjBase - value('limite_adicional_irpj_mensal') * period, 0
+    );
+    const increasedAdditionalBase = Math.max(
+      regularIrpjBase + increasedIrpjBase -
+        value('limite_adicional_irpj_mensal') * period, 0
+    );
+    const lc224Irpj = lc224IrpjRevenue * rate('aliq_irpj_faturamento') * 0.10 +
+      (increasedAdditionalBase - regularAdditionalBase) * rate('aliq_adicional_irpj');
+    const lc224Csll = lc224CsllRevenue * rate('aliq_csll_faturamento') * 0.10;
+    brazilTax = irpj + additionalIrpj + csll + lc224Irpj + lc224Csll;
+  } else {
+    brazilTax = Math.max(profitBeforeTax, 0) * rate('aliq_ir_csll');
+  }
+  const netBrazil = profitBeforeTax - brazilTax;
+  const manufacturingCost = value('custo_fabricacao_usd') * quantity * exchange +
+    value('custo_fabricacao_usd_p2') * readerQuantity * exchange;
+  const exportProfitBeforeTax = fobUsd * exchange - manufacturingCost -
+    value('opex_matriz_usd') * exchange;
+  const floridaTax = Math.max(exportProfitBeforeTax, 0) *
+    rate('rateio_fl') * rate('aliq_fl');
+  const federalTax = Math.max(exportProfitBeforeTax - floridaTax, 0) * rate('aliq_federal_eua');
+  const netExport = exportProfitBeforeTax - floridaTax - federalTax;
+  const parentShare = scenarioNum === 1 ? share / 100 : rate('participacao_matriz_c2');
+  const parentBrazil = Math.max(netBrazil, 0) * parentShare;
+  const divWithholding = parentBrazil * rate('retencao_dividendos');
+  const netRemittance = (parentBrazil - divWithholding) *
+    (1 - rate('custo_remessa'));
+  const branchRetained = netBrazil - parentBrazil;
+  const totalParent = netExport + netRemittance;
+  const grossMargin = grossRevenue ? totalParent / grossRevenue * 100 : 0;
+  const brazilMargin = grossRevenue ? netBrazil / grossRevenue * 100 : 0;
+
+  return {
+    fob: fobTotal, price, exchange, fobUsd, kitFobUsd: kitImport.fobUsd,
+    readerFobUsd: readerImport.fobUsd, kitImport, readerImport, cogs, grossRevenue,
+    commercialRevenue, salesTaxes: salesTaxTotal, netRevenue, operatingProfit,
+    brazilTax, netBrazil, profitBeforeTax, opex, variableOperator,
+    netExport, parentBrazil, netRemittance, branchRetained, totalParent,
+    globalProfit: netExport + branchRetained + netRemittance,
+    parentGrossMargin: grossMargin, brazilGrossMargin: brazilMargin,
+    partnerRetainedMargin: grossRevenue ? branchRetained / grossRevenue * 100 : 0,
+    distributorGrossMargin: brazilMargin
+  };
+}
+
+let currency = 'BRL';
+function toUnit(v) { return currency === 'USD' ? Number(v || 0) / currentSim.exchange : Number(v || 0); }
+function curSym() { return currency === 'USD' ? 'US$' : 'R$'; }
+function fmtBrl(v) {
+  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtMoney(v) {
+  return curSym() + ' ' + toUnit(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtMoneyCompact(v) {
+  v = toUnit(v);
+  const sym = curSym();
+  if (Math.abs(v) >= 1000000) return sym + ' ' + (v / 1000000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' mi';
+  if (Math.abs(v) >= 10000) return sym + ' ' + (v / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' mil';
+  return sym + ' ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtUsd(v) {
+  return 'US$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtUsdK(v) {
+  return 'US$ ' + (Number(v || 0) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + ' mil';
+}
+
+function fmtPct(v) {
+  return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+}
+
+const matrixFobs = [100000, 200000, 288000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000];
+const matrixPrices = [6000, 8000, 9600, 12000, 16000, 20000];
+
+function renderHeatmap() {
+  const table = document.getElementById('heatmap-table');
+  let html = '<thead><tr><th class="col-corner">FOB total kits (USD) \ Venda (R$/kit)</th>';
+  for (let pr of matrixPrices) {
+    const isBase = Math.abs(pr - 9600) < 1;
+    html += `<th class="col-header">${fmtBrl(pr)}${isBase ? ' <span class="badge-optimum" style="background:var(--cyan);color:#000;">BASE</span>' : ''}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  let values = [];
+  for (let fob of matrixFobs) {
+    for (let pr of matrixPrices) {
+      let r1 = calculateScenario(fob, pr, currentSim.exchange, currentSim.share, 1);
+      let r2 = calculateScenario(fob, pr, currentSim.exchange, currentSim.share, 2);
+      if (currentMatrixMode === 'c1_parent') values.push(r1.totalParent);
+      else if (currentMatrixMode === 'c2_parent') values.push(r2.totalParent);
+      else if (currentMatrixMode === 'advantage') values.push(r1.totalParent - r2.totalParent);
+      else if (currentMatrixMode === 'c1_margin') values.push(r1.parentGrossMargin);
+    }
+  }
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+
+  for (let fob of matrixFobs) {
+    const isBaseFob = fob === currentSim.quantity * INITIAL_P.preco_fob_base;
+    const badgeText = isBaseFob ? ' <span class="badge-optimum" style="background:var(--cyan);color:#000;">BASE</span>' : '';
+
+    html += `<tr><td class="row-header">${fmtUsd(fob)}${badgeText}</td>`;
+
+    for (let pr of matrixPrices) {
+      let r1 = calculateScenario(fob, pr, currentSim.exchange, currentSim.share, 1);
+      let r2 = calculateScenario(fob, pr, currentSim.exchange, currentSim.share, 2);
+      let val, subText, displayVal;
+
+      if (currentMatrixMode === 'c1_parent') {
+        val = r1.totalParent;
+        displayVal = fmtMoneyCompact(val);
+        subText = fmtPct(r1.parentGrossMargin);
+      } else if (currentMatrixMode === 'c2_parent') {
+        val = r2.totalParent;
+        displayVal = fmtMoneyCompact(val);
+        subText = fmtPct(r2.parentGrossMargin);
+      } else if (currentMatrixMode === 'advantage') {
+        val = r1.totalParent - r2.totalParent;
+        displayVal = '+' + fmtMoneyCompact(val);
+        subText = val > 0 && r2.totalParent > 0 ? '+' + (val / r2.totalParent * 100).toFixed(0) + '%' : 'C2 ≤ 0';
+      } else if (currentMatrixMode === 'c1_margin') {
+        val = r1.parentGrossMargin;
+        displayVal = fmtPct(val);
+        subText = fmtMoneyCompact(r1.totalParent);
+      }
+
+      const norm = maxVal > minVal ? (val - minVal) / (maxVal - minVal) : 0.5;
+      let bgStyle;
+      if (currentMatrixMode === 'advantage') {
+        bgStyle = `background: rgba(16, 185, 129, ${0.1 + norm * 0.35}); color: #10b981;`;
+      } else if (val < 0) {
+        bgStyle = 'background: rgba(244, 63, 94, 0.25); color: #f43f5e;';
+      } else {
+        bgStyle = `background: rgba(0, 210, 255, ${0.08 + norm * 0.35}); color: var(--text-primary);`;
+      }
+
+      const specialClass = '';
+
+      html += `<td style="${bgStyle}" class="${specialClass}">
+        <span class="cell-val">${displayVal}</span>
+        <span class="cell-sub">${subText}</span>
+      </td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function setMatrixMode(mode) {
+  currentMatrixMode = mode;
+  document.querySelectorAll('#matrix-mode-selector .tab-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  renderHeatmap();
+}
+
+function renderDetailedTable() {
+  const tbody = document.querySelector('#detailed-data-table tbody');
+  let html = '';
+  for (let fob of matrixFobs) {
+    const r1 = calculateScenario(fob, currentSim.price, currentSim.exchange, currentSim.share, 1);
+    const r2 = calculateScenario(fob, currentSim.price, currentSim.exchange, currentSim.share, 2);
+    const adv = r1.totalParent - r2.totalParent;
+    const badgeText = fob === currentSim.quantity * INITIAL_P.preco_fob_base
+      ? ' <span class="badge-optimum" style="background:var(--cyan);color:#000;">BASE</span>' : '';
+    html += `<tr>
+      <td><strong>${fmtUsd(fob / currentSim.quantity)}</strong>${badgeText}</td>
+      <td>${fmtUsdK(fob)}</td>
+      <td>${fmtUsdK(r1.readerFobUsd)}</td>
+      <td>${fmtMoney(r1.kitImport.inventoryCost / currentSim.quantity)}</td>
+      <td>${fmtMoney(r1.readerImport.inventoryCost / Number(INITIAL_P.quantidade_p2))}</td>
+      <td>${fmtMoney(r1.kitImport.cashOutlay / currentSim.quantity)}</td>
+      <td>${fmtMoney(r1.readerImport.cashOutlay / Number(INITIAL_P.quantidade_p2))}</td>
+      <td style="color:var(--cyan);">${fmtMoney(r1.netExport)}</td>
+      <td style="color:var(--emerald);">${fmtMoney(r1.netRemittance)}</td>
+      <td style="font-weight:800;font-size:13px;">${fmtMoney(r1.totalParent)}</td>
+      <td><strong>${fmtPct(r1.parentGrossMargin)}</strong></td>
+      <td>${fmtMoney(r1.netBrazil)}</td>
+      <td>${fmtPct(r1.brazilGrossMargin)}</td>
+      <td style="color:var(--emerald);font-weight:600;">${fmtMoney(r1.branchRetained)}</td>
+      <td style="color:var(--rose);">${fmtMoney(r2.totalParent)}</td>
+      <td>${fmtPct(r2.parentGrossMargin)}</td>
+      <td style="color:var(--emerald);font-weight:700;">+${fmtMoney(adv)}</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+function renderCharts() {
+  const width = 540, height = 280;
+  const padL = 65, padR = 25, padT = 30, padB = 45;
+  const pW = width - padL - padR;
+  const pH = height - padT - padB;
+  const FMIN = 100000, FMAX = 1000000;
+
+  const fobs = [];
+  for (let f = FMIN; f <= FMAX; f += 25000) fobs.push(f);
+
+  const ptsTotal1 = [], ptsExp1 = [], ptsRemit1 = [], ptsTotal2 = [];
+
+  for (let f of fobs) {
+    const r1 = calculateScenario(f, currentSim.price, currentSim.exchange, currentSim.share, 1);
+    const r2 = calculateScenario(f, currentSim.price, currentSim.exchange, currentSim.share, 2);
+    ptsTotal1.push({ x: f, y: r1.totalParent });
+    ptsExp1.push({ x: f, y: r1.netExport });
+    ptsRemit1.push({ x: f, y: r1.netRemittance });
+    ptsTotal2.push({ x: f, y: r2.totalParent });
+  }
+  const maxValue = Math.max(0, ...ptsTotal1.map(point => point.y), ...ptsTotal2.map(point => point.y));
+  const maxP = Math.max(1000000, Math.ceil(maxValue / 1000000) * 1000000);
+  const profitStep = Math.ceil(maxP / 6000000) * 1000000;
+
+  function xMap(f) { return padL + ((f - FMIN) / (FMAX - FMIN)) * pW; }
+  function yMap(p) { return padT + pH - (Math.max(0, p) / maxP) * pH; }
+  function path(pts, yf) { return pts.map((pt, i) => (i === 0 ? 'M' : 'L') + `${xMap(pt.x).toFixed(1)},${yf(pt.y).toFixed(1)} `).join(''); }
+
+  let svgProfit = `
+    <line x1="${padL}" y1="${padT+pH}" x2="${width-padR}" y2="${padT+pH}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+pH}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  `;
+  for (let pStep = 0; pStep <= maxP; pStep += profitStep) {
+    const y = yMap(pStep);
+    svgProfit += `<line x1="${padL}" y1="${y}" x2="${width-padR}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                  <text x="${padL-8}" y="${y+4}" fill="#94a3b8" font-size="10" text-anchor="end" font-family="var(--font-mono)">${curSym()} ${(toUnit(pStep)/1e6).toFixed(1)}M</text>`;
+  }
+  for (let fStep = 100000; fStep <= 1000000; fStep += 300000) {
+    const x = xMap(fStep);
+    svgProfit += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+pH}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                  <text x="${x}" y="${padT+pH+18}" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="var(--font-mono)">${fmtUsdK(fStep)} FOB kits</text>`;
+  }
+  svgProfit += `<path d="${path(ptsExp1, yMap)}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4,4"/>`;
+  svgProfit += `<path d="${path(ptsRemit1, yMap)}" fill="none" stroke="var(--emerald)" stroke-width="2" stroke-dasharray="4,4"/>`;
+  svgProfit += `<path d="${path(ptsTotal2, yMap)}" fill="none" stroke="var(--rose)" stroke-width="2.5"/>`;
+  svgProfit += `<path d="${path(ptsTotal1, yMap)}" fill="none" stroke="var(--cyan)" stroke-width="3.5" stroke-linecap="round"/>`;
+  document.getElementById('chart-profit').innerHTML = svgProfit;
+
+  let svgMargin = `
+    <line x1="${padL}" y1="${padT+pH}" x2="${width-padR}" y2="${padT+pH}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+pH}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  `;
+  for (let mStep = -160; mStep <= 80; mStep += 40) {
+    const y = yMargin(mStep);
+    svgMargin += `<line x1="${padL}" y1="${y}" x2="${width-padR}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3"/>
+                  <text x="${padL-8}" y="${y+4}" fill="#94a3b8" font-size="10" text-anchor="end" font-family="var(--font-mono)">${mStep}%</text>`;
+  }
+  for (let fStep = 100000; fStep <= 1000000; fStep += 300000) {
+    svgMargin += `<text x="${xMap(fStep)}" y="${padT+pH+18}" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="var(--font-mono)">${fmtUsdK(fStep)} FOB kits</text>`;
+  }
+
+  const m1Pts = [], mSubPts = [], m2Pts = [];
+  for (let f of fobs) {
+    const r1 = calculateScenario(f, currentSim.price, currentSim.exchange, currentSim.share, 1);
+    const r2 = calculateScenario(f, currentSim.price, currentSim.exchange, currentSim.share, 2);
+    m1Pts.push({ x: f, y: r1.parentGrossMargin });
+    mSubPts.push({ x: f, y: r1.brazilGrossMargin });
+    m2Pts.push({ x: f, y: r2.parentGrossMargin });
+  }
+  function yMargin(m) { return padT + pH - ((m + 160) / 240) * pH; }
+  svgMargin += `<path d="${path(m2Pts, yMargin)}" fill="none" stroke="var(--rose)" stroke-width="2.5"/>`;
+  svgMargin += `<path d="${path(mSubPts, yMargin)}" fill="none" stroke="var(--emerald)" stroke-width="2.5" stroke-dasharray="4,4"/>`;
+  svgMargin += `<path d="${path(m1Pts, yMargin)}" fill="none" stroke="var(--cyan)" stroke-width="3.5" stroke-linecap="round"/>`;
+  document.getElementById('chart-margin').innerHTML = svgMargin;
+}
+
+function renderSummary() {
+  const rows = matrixFobs.map(f => {
+    const r1 = calculateScenario(f, currentSim.price, currentSim.exchange, currentSim.share, 1);
+    const r2 = calculateScenario(f, currentSim.price, currentSim.exchange, currentSim.share, 2);
+    return { f, r1, r2, adv: r1.totalParent - r2.totalParent };
+  });
+  const minRow = rows.reduce((a, b) => (b.adv < a.adv ? b : a));
+  const maxRow = rows.reduce((a, b) => (b.adv > a.adv ? b : a));
+  const first = rows[0], last = rows[rows.length - 1];
+  const allBetter = rows.every(r => r.adv > 0);
+
+  document.getElementById('verdict-text').innerHTML =
+    `Em todos os ${rows.length} pontos de FOB total dos kits analisados (${fmtUsdK(first.f)} a ${fmtUsdK(last.f)}), com os leitores mantidos constantes, ` +
+    `o resultado líquido da matriz no Cenário 1 fica entre <strong>${fmtMoneyCompact(first.r1.totalParent)}</strong> e <strong>${fmtMoneyCompact(last.r1.totalParent)}</strong>, ` +
+    `contra <strong>${fmtMoneyCompact(first.r2.totalParent)}</strong> a <strong>${fmtMoneyCompact(last.r2.totalParent)}</strong> no Cenário 2. ` +
+    `Os resultados incluem lucro líquido de exportação e remessa líquida do Brasil.` +
+    (allBetter ? '' : ' <strong>Atenção:</strong> em pontos com resultado brasileiro nulo ou negativo, não há remessa potencial em nenhum cenário.');
+  document.getElementById('verdict-min-adv').textContent = '+' + fmtMoneyCompact(minRow.adv);
+  document.getElementById('verdict-min-lbl').textContent = `Menor diferença C1 − C2 (FOB total dos kits ${fmtUsdK(minRow.f)})`;
+
+  const card = (tag, badge, color, value, desc) => `
+    <div class="kpi-card" style="--card-accent: var(${color});">
+      <div class="kpi-header"><span class="kpi-tag">${tag}</span><span class="kpi-badge">${badge}</span></div>
+      <div class="kpi-value" style="color: var(${color});">${value}</div>
+      <div class="kpi-desc">${desc}</div>
+    </div>`;
+  const point = (r) => card(
+    `FOB total kits ${fmtUsdK(r.f)}`, `US$ ${r.f.toLocaleString('pt-BR')}`, '--cyan',
+    '+' + fmtMoneyCompact(r.adv),
+    `Matriz: <strong>${fmtMoneyCompact(r.r1.totalParent)}</strong> (${fmtPct(r.r1.parentGrossMargin)}) no Cenário 1 vs <strong>${fmtMoneyCompact(r.r2.totalParent)}</strong> (${fmtPct(r.r2.parentGrossMargin)}) no Cenário 2.`
+  );
+  const mid = rows.find(r => r.f === 500000);
+  document.getElementById('kpi-grid').innerHTML =
+    point(first) + point(mid) + point(last) +
+    card('Diferença do resultado Matriz C1 − C2', 'INTERVALO ANALISADO', '--gold',
+      `${fmtMoneyCompact(minRow.adv)} a ${fmtMoneyCompact(maxRow.adv)}`,
+      `Diferença mínima em FOB total de ${fmtUsdK(minRow.f)} e máxima em ${fmtUsdK(maxRow.f)}.`);
+
+  document.getElementById('advisory-range').innerHTML =
+    `<li><strong>FOB total dos kits ${fmtUsdK(first.f)}:</strong> Cenário 1 ${fmtMoneyCompact(first.r1.totalParent)} vs Cenário 2 ${fmtMoneyCompact(first.r2.totalParent)}.</li>` +
+    `<li><strong>FOB total dos kits ${fmtUsdK(mid.f)}:</strong> Cenário 1 ${fmtMoneyCompact(mid.r1.totalParent)} vs Cenário 2 ${fmtMoneyCompact(mid.r2.totalParent)}.</li>` +
+    `<li><strong>FOB total dos kits ${fmtUsdK(last.f)}:</strong> Cenário 1 ${fmtMoneyCompact(last.r1.totalParent)} vs Cenário 2 ${fmtMoneyCompact(last.r2.totalParent)}.</li>` +
+    `<li>A diferença entre cenários decorre somente da parcela distribuível atribuída à matriz no Cenário 1. Se o resultado brasileiro for negativo ou zero, não há remessa em nenhum cenário.</li>`;
+}
+
+function updateSim() {
+  currentSim.fob = Number(document.getElementById('slider-fob').value);
+  currentSim.price = Number(document.getElementById('slider-price').value);
+  currentSim.exchange = Number(document.getElementById('slider-exchange').value);
+  currentSim.share = Number(document.getElementById('slider-share').value);
+
+  document.getElementById('val-fob').textContent = fmtUsd(currentSim.fob);
+  document.getElementById('val-price').textContent = fmtBrl(currentSim.price);
+  document.getElementById('val-exchange').textContent = fmtBrl(currentSim.exchange);
+  document.getElementById('val-share').textContent = currentSim.share + '%';
+  document.getElementById('c1-share-title').textContent = `Cenário 1: Subsidiária (${currentSim.share}%)`;
+  document.getElementById('c1-share-badge').textContent = `PARTICIPAÇÃO ${currentSim.share}%`;
+  document.getElementById('c1-share-legend').textContent = `Resultado matriz C1 (${currentSim.share}%)`;
+  document.getElementById('c1-share-head').textContent = `Remessa Brasil (${currentSim.share}%)`;
+
+  const r1 = calculateScenario(currentSim.fob, currentSim.price, currentSim.exchange, currentSim.share, 1);
+  const r2 = calculateScenario(currentSim.fob, currentSim.price, currentSim.exchange, currentSim.share, 2);
+
+  document.getElementById('sim-c1-fob-total').textContent = fmtUsd(r1.fobUsd);
+  document.getElementById('sim-c1-net-br').textContent = fmtMoney(r1.netBrazil);
+  document.getElementById('sim-c1-sub-margin').textContent = fmtPct(r1.brazilGrossMargin);
+  document.getElementById('sim-c1-partner-retained').textContent = fmtMoney(r1.branchRetained);
+  document.getElementById('sim-c1-net-exp').textContent = fmtMoney(r1.netExport);
+  document.getElementById('sim-c1-remit').textContent = fmtMoney(r1.netRemittance);
+  document.getElementById('sim-c1-total').textContent = fmtMoney(r1.totalParent);
+  document.getElementById('sim-c1-margin').textContent = fmtPct(r1.parentGrossMargin);
+
+  document.getElementById('sim-c2-fob-total').textContent = fmtUsd(r2.fobUsd);
+  document.getElementById('sim-c2-net-dist').textContent = fmtMoney(r2.netBrazil);
+  document.getElementById('sim-c2-dist-margin').textContent = fmtPct(r2.distributorGrossMargin);
+  document.getElementById('sim-c2-net-exp').textContent = fmtMoney(r2.netExport);
+  document.getElementById('sim-c2-remit').textContent = fmtMoney(0) + ' (0%)';
+  document.getElementById('sim-c2-total').textContent = fmtMoney(r2.totalParent);
+  document.getElementById('sim-c2-margin').textContent = fmtPct(r2.parentGrossMargin);
+
+  renderHeatmap();
+  renderDetailedTable();
+  renderCharts();
+  renderSummary();
+}
+
+function setFobQuick(val) {
+  document.getElementById('slider-fob').value = val;
+  updateSim();
+}
+
+function resetSimParams() {
+  document.getElementById('slider-fob').value = 288000;
+  document.getElementById('slider-price').value = 9600;
+  document.getElementById('slider-exchange').value = 5.60;
+  document.getElementById('slider-share').value = 75;
+  updateSim();
+}
+
+function toggleCurrency() {
+  currency = currency === 'BRL' ? 'USD' : 'BRL';
+  document.getElementById('currency-text').textContent = currency === 'USD' ? 'Valores em US\$' : 'Valores em R\$';
+  document.querySelectorAll('.cur-sym').forEach(el => { el.textContent = curSym(); });
+  updateSim();
+}
+
+function toggleTheme() {
+  const current = document.body.getAttribute('data-theme');
+  const target = current === 'light' ? 'dark' : 'light';
+  if (target === 'light') {
+    document.body.setAttribute('data-theme', 'light');
+    document.getElementById('theme-icon').textContent = '☀️';
+    document.getElementById('theme-text').textContent = 'Modo Escuro';
+  } else {
+    document.body.removeAttribute('data-theme');
+    document.getElementById('theme-icon').textContent = '🌙';
+    document.getElementById('theme-text').textContent = 'Modo Claro';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderHeatmap();
+  renderDetailedTable();
+  renderCharts();
+  updateSim();
+});
+</script>
+</body>
+</html>
