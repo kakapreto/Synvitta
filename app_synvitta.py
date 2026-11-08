@@ -75,7 +75,9 @@ class DREReportSynvitta(BaseModel):
     lucro_presumido: DREDetalhadaRegime
     regime_recomendado: str = Field(description="Recomendação tributária fundamentada em 1 frase.")
     economia_tributaria_anual_estimada_brl: float
-
+git add app_synvitta.py
+git commit -m "Atualiza modelo do Gemini para gemini-2.0-flash"
+git push origin main
 # =====================================================================
 # FUNÇÃO DO PIPELINE DE IA (2 AGENTES GEMINI)
 # =====================================================================
