@@ -89,7 +89,7 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     Responda EXCLUSIVAMENTE com o JSON do schema LandedCostLoteConsolidado.
     """
     res_landed = client.models.generate_content(
-        model='gemini-1.5-flash',
+        model='gemini-3.8-flash',
         contents=json.dumps(payload_importacao),
         config=types.GenerateContentConfig(
             system_instruction=prompt_agente1,
@@ -104,12 +104,12 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     payload_comercial["landed_cost_input"] = landed_json
     prompt_agente2 = """
     Você é o Controller Financeiro e Tributarista da Synvitta L.A.
-    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculated no Landed Cost.
+    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculado no Landed Cost.
     Considere créditos na importação (Lucro Real) e regras de presunção (Lucro Presumido).
     Responda EXCLUSIVAMENTE com o JSON do schema DREReportSynvitta.
     """
     res_dre = client.models.generate_content(
-        model='gemini-1.5-flash',
+        model='gemini-3.8-flash',
         contents=json.dumps(payload_comercial),
         config=types.GenerateContentConfig(
             system_instruction=prompt_agente2,
