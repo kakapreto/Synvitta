@@ -89,7 +89,7 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     Responda EXCLUSIVAMENTE com o JSON do schema LandedCostLoteConsolidado.
     """
     res_landed = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model='gemini-2.0-flash',
         contents=json.dumps(payload_importacao),
         config=types.GenerateContentConfig(
             system_instruction=prompt_agente1,
@@ -104,12 +104,12 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     payload_comercial["landed_cost_input"] = landed_json
     prompt_agente2 = """
     Você é o Controller Financeiro e Tributarista da Synvitta L.A.
-    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculado no Landed Cost.
+    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculated no Landed Cost.
     Considere créditos na importação (Lucro Real) e regras de presunção (Lucro Presumido).
     Responda EXCLUSIVAMENTE com o JSON do schema DREReportSynvitta.
     """
     res_dre = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model='gemini-2.0-flash',
         contents=json.dumps(payload_comercial),
         config=types.GenerateContentConfig(
             system_instruction=prompt_agente2,
@@ -175,7 +175,7 @@ st.sidebar.title("⚙️ Parâmetros Operacionais")
 api_key_env = st.secrets.get("GEMINI_API_KEY", "")
 user_api_key = st.sidebar.text_input("Chave da API Gemini", value=api_key_env, type="password")
 
-st.sidebar.subheader("💱 Câmbio e Localização")
+st.sidebar.subheader("💵 Câmbio e Localização")
 ptax = st.sidebar.number_input("Câmbio PTAX (BRL/USD)", value=5.60, step=0.05)
 uf_destino = st.sidebar.selectbox("UF de Destino", ["SP", "MG", "RJ", "PR", "SC"])
 
@@ -367,5 +367,3 @@ if "resultado_dre" in st.session_state:
             mime="application/json",
             use_container_width=True
         )
-else:
-    st.info("👈 Ajuste os parâmetros na barra lateral e clique em **Executar Simulação via IA**.")
