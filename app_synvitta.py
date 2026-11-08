@@ -75,9 +75,7 @@ class DREReportSynvitta(BaseModel):
     lucro_presumido: DREDetalhadaRegime
     regime_recomendado: str = Field(description="Recomendação tributária fundamentada em 1 frase.")
     economia_tributaria_anual_estimada_brl: float
-git add app_synvitta.py
-git commit -m "Atualiza modelo do Gemini para gemini-2.0-flash"
-git push origin main
+
 # =====================================================================
 # FUNÇÃO DO PIPELINE DE IA (2 AGENTES GEMINI)
 # =====================================================================
@@ -91,7 +89,7 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     Responda EXCLUSIVAMENTE com o JSON do schema LandedCostLoteConsolidado.
     """
     res_landed = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-1.5-flash',
         contents=json.dumps(payload_importacao),
         config=types.GenerateContentConfig(
             system_instruction=prompt_agente1,
@@ -111,7 +109,7 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     Responda EXCLUSIVAMENTE com o JSON do schema DREReportSynvitta.
     """
     res_dre = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-1.5-flash',
         contents=json.dumps(payload_comercial),
         config=types.GenerateContentConfig(
             system_instruction=prompt_agente2,
