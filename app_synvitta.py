@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -16,6 +17,76 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# =====================================================================
+# GERENCIAMENTO DE ESTADO E CENÁRIOS PADRÃO
+# =====================================================================
+DEFAULT_JSON_PATH = "dados_entrada.json"
+
+def carregar_dados_iniciais():
+    if os.path.exists(DEFAULT_JSON_PATH):
+        try:
+            with open(DEFAULT_JSON_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "parametros_globais": {
+            "empresa": "Synvitta L.A. Ltda.",
+            "ptax": 5.60,
+            "uf_destino": "SP",
+            "incoterm": "EXW",
+            "hub_nacionalizacao": "Guarulhos/SP"
+        },
+        "custos_compartilhados_usd": {
+            "frete_internacional_aereo": 9000.00,
+            "frete_origem": 1500.00,
+            "seguro_internacional": 500.00,
+            "despacho_miami": 500.00,
+            "locacao_uld_rap": 5000.00
+        },
+        "custos_compartilhados_brl": {
+            "armazenagem_terminal": 21000.00,
+            "despachante_aduaneiro": 7000.00,
+            "taxa_siscomex": 230.00,
+            "taxa_anvisa": 536.00
+        },
+        "produtos": [
+            {
+                "nome_produto": "Kit Reagente / Diagnóstico",
+                "ncm": "3822.19.90",
+                "quantidade": 1440,
+                "preco_unitario_exw_usd": 200.00,
+                "preco_venda_unitario_brl": 9600.00,
+                "frete_interno_hub_brl": 1200.00,
+                "aliquotas_importacao": {"ii": 0.0, "ipi": 0.0, "pis": 0.0, "cofins": 0.0, "icms": 0.0},
+                "creditos_importacao": {"credita_ipi": False, "credita_icms": False},
+                "aliquotas_venda": {"icms": 0.04, "pis": 0.0065, "cofins": 0.03, "operador_var": 0.04}
+            },
+            {
+                "nome_produto": "Leitor Óptico",
+                "ncm": "9027.50.20",
+                "quantidade": 160,
+                "preco_unitario_exw_usd": 5000.00,
+                "preco_venda_unitario_brl": 280000.00,
+                "frete_interno_hub_brl": 800.00,
+                "aliquotas_importacao": {"ii": 0.14, "ipi": 0.0975, "pis": 0.021, "cofins": 0.0965, "icms": 0.18},
+                "creditos_importacao": {"credita_ipi": True, "credita_icms": True},
+                "aliquotas_venda": {"icms": 0.18, "pis": 0.0065, "cofins": 0.03, "operador_var": 0.0}
+            }
+        ],
+        "estrutura_opex_e_societaria": {
+            "opex_fixo_mensal_brl": 200000.00,
+            "meses_operacao": 1,
+            "participacao_matriz_eua_pct": 0.75,
+            "participacao_socios_locais_sp_pct": 0.25,
+            "retencao_dividendos_pct": 0.10,
+            "custo_remessa_pct": 0.01
+        }
+    }
+
+if "cenario" not in st.session_state:
+    st.session_state["cenario"] = carregar_dados_iniciais()
 
 # =====================================================================
 # SCHEMAS PYDANTIC (ESTRUTURAS ESTREITAS)
@@ -82,7 +153,6 @@ class DREReportSynvitta(BaseModel):
 def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comercial: dict) -> DREReportSynvitta:
     client = genai.Client(api_key=api_key)
 
-    # Agente 1: Landed Cost
     prompt_agente1 = """
     Você é o Engenheiro Financeiro Aduaneiro da Synvitta L.A.
     Calcule o rateio aduaneiro por NCM e o Landed Cost (EXW -> Hub Guarulhos/SP).
@@ -100,7 +170,6 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     )
     landed_json = json.loads(res_landed.text)
 
-    # Agente 2: DRE Comparativa
     payload_comercial["landed_cost_input"] = landed_json
     prompt_agente2 = """
     Você é o Controller Financeiro e Tributarista da Synvitta L.A.
@@ -121,12 +190,11 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     return DREReportSynvitta.model_validate_json(res_dre.text)
 
 # =====================================================================
-# GERADOR DE ARQUIVO EXCEL COMPLETO EM MEMÓRIA
+# GERADOR DE EXCEL EM MEMÓRIA
 # =====================================================================
 def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        # Aba 1: Resumo Executivo
         df_resumo = pd.DataFrame([
             {"Parâmetro": "Empresa", "Valor": dre_data.empresa},
             {"Parâmetro": "Taxa de Câmbio (PTAX)", "Valor": f"R$ {dre_data.ptax:.2f}"},
@@ -135,7 +203,6 @@ def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
         ])
         df_resumo.to_excel(writer, sheet_name="Resumo", index=False)
 
-        # Aba 2: DRE Comparativa
         lr, lp = dre_data.lucro_real, dre_data.lucro_presumido
         df_dre = pd.DataFrame({
             "Linha DRE": [
@@ -159,7 +226,6 @@ def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
         })
         df_dre.to_excel(writer, sheet_name="DRE_Comparativa", index=False)
 
-        # Aba 3: Produtos
         if lr.itens_produtos:
             df_prod = pd.DataFrame([p.model_dump() for p in lr.itens_produtos])
             df_prod.to_excel(writer, sheet_name="Produtos_LucroReal", index=False)
@@ -167,80 +233,184 @@ def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
     return output.getvalue()
 
 # =====================================================================
-# INTERFACE DO USUÁRIO - SIDEBAR (PARÂMETROS EDITÁVEIS)
+# SIDEBAR - AUTENTICAÇÃO E GESTÃO DE CENÁRIOS JSON
 # =====================================================================
-st.sidebar.title("⚙️ Parâmetros Operacionais")
+st.sidebar.title("🧬 Synvitta L.A. - Painel")
 
-# Gestão da API Key
 api_key_env = st.secrets.get("GEMINI_API_KEY", "")
 user_api_key = st.sidebar.text_input("Chave da API Gemini", value=api_key_env, type="password")
 
-st.sidebar.subheader("💵 Câmbio e Localização")
-ptax = st.sidebar.number_input("Câmbio PTAX (BRL/USD)", value=5.60, step=0.05)
-uf_destino = st.sidebar.selectbox("UF de Destino", ["SP", "MG", "RJ", "PR", "SC"])
+st.sidebar.subheader("📂 Gestão de Cenários (JSON)")
 
-st.sidebar.subheader("📦 Produto 1: Kit Reagente")
-q1 = st.sidebar.number_input("Kits Importados", value=1440)
-p1_exw = st.sidebar.number_input("Preço EXW (USD/kit)", value=200.0)
-v1_brl = st.sidebar.number_input("Preço Venda BR (R$/kit)", value=9600.0)
+# Upload de Cenário
+uploaded_file = st.sidebar.file_uploader("Importar Cenário JSON", type=["json"])
+if uploaded_file is not None:
+    try:
+        cenario_carregado = json.load(uploaded_file)
+        st.session_state["cenario"] = cenario_carregado
+        st.sidebar.success("✅ Cenário importado com sucesso!")
+    except Exception as e:
+        st.sidebar.error(f"Erro ao ler JSON: {e}")
 
-st.sidebar.subheader("🔬 Produto 2: Leitor Óptico")
-q2 = st.sidebar.number_input("Leitores Importados", value=160)
-p2_exw = st.sidebar.number_input("Preço EXW (USD/unidade)", value=5000.0)
-v2_brl = st.sidebar.number_input("Preço Venda BR (R$/unid)", value=280000.0)
-
-st.sidebar.subheader("🏢 Estrutura & Opex")
-opex_fixo = st.sidebar.number_input("Opex Fixo Mensal (R$)", value=200000.0, step=10000.0)
+# Exportação de Cenário
+cenario_json_bytes = json.dumps(st.session_state["cenario"], indent=2, ensure_ascii=False).encode("utf-8")
+st.sidebar.download_button(
+    label="💾 Baixar Cenário Atual (JSON)",
+    data=cenario_json_bytes,
+    file_name="cenario_synvitta.json",
+    mime="application/json",
+    use_container_width=True
+)
 
 btn_calcular = st.sidebar.button("🚀 Executar Simulação via IA", type="primary", use_container_width=True)
 
 # =====================================================================
-# PAINEL PRINCIPAL
+# PAINEL PRINCIPAL - ABAS VISUAIS DE ENTRADA DE DADOS
 # =====================================================================
 st.title("🧬 Synvitta L.A. — Simulador Integrado de IA & DRE")
 st.caption("Automação de Landed Cost Multiproduto + Comparativo Tributário Lucro Real vs. Presumido")
 
+# Atalho rápido do cenário em memória
+cen = st.session_state["cenario"]
+
+tab_globais, tab_fretes, tab_prod1, tab_prod2, tab_opex = st.tabs([
+    "🌐 1. Câmbio & Localização",
+    "✈️ 2. Fretes & Despesas Aduaneiras",
+    "📦 3. Kit Reagente",
+    "🔬 4. Leitor Óptico",
+    "🏢 5. Opex & Regras Societárias"
+])
+
+# ---------------------------------------------------------------------
+# Aba 1: Parâmetros Globais
+# ---------------------------------------------------------------------
+with tab_globais:
+    st.subheader("Parâmetros Gerais do Lote")
+    col1, col2, col3 = st.columns(3)
+    cen["parametros_globais"]["empresa"] = col1.text_input("Empresa", value=cen["parametros_globais"].get("empresa", "Synvitta L.A. Ltda."))
+    cen["parametros_globais"]["ptax"] = col2.number_input("Câmbio PTAX (BRL/USD)", value=float(cen["parametros_globais"].get("ptax", 5.60)), step=0.05)
+    cen["parametros_globais"]["uf_destino"] = col3.selectbox("UF de Destino", ["SP", "MG", "RJ", "PR", "SC"], index=0)
+
+# ---------------------------------------------------------------------
+# Aba 2: Fretes e Custos Compartilhados
+# ---------------------------------------------------------------------
+with tab_fretes:
+    st.subheader("Custos Compartilhados da Operação")
+    col_usd, col_brl = st.columns(2)
+
+    with col_usd:
+        st.markdown("**Custos em USD (Origem / Trecho Internacional)**")
+        c_usd = cen["custos_compartilhados_usd"]
+        c_usd["frete_internacional_aereo"] = st.number_input("Frete Internacional Aéreo (USD)", value=float(c_usd.get("frete_internacional_aereo", 9000.0)))
+        c_usd["frete_origem"] = st.number_input("Frete de Origem (USD)", value=float(c_usd.get("frete_origem", 1500.0)))
+        c_usd["seguro_internacional"] = st.number_input("Seguro Internacional (USD)", value=float(c_usd.get("seguro_internacional", 500.0)))
+        c_usd["despacho_miami"] = st.number_input("Despacho Miami (USD)", value=float(c_usd.get("despacho_miami", 500.0)))
+        c_usd["locacao_uld_rap"] = st.number_input("Locação ULD/RAP (USD)", value=float(c_usd.get("locacao_uld_rap", 5000.0)))
+
+    with col_brl:
+        st.markdown("**Custos em BRL (Despesas Locais Terminal / Despacho)**")
+        c_brl = cen["custos_compartilhados_brl"]
+        c_brl["armazenagem_terminal"] = st.number_input("Armazenagem Terminal (R$)", value=float(c_brl.get("armazenagem_terminal", 21000.0)))
+        c_brl["despachante_aduaneiro"] = st.number_input("Despachante Aduaneiro (R$)", value=float(c_brl.get("despachante_aduaneiro", 7000.0)))
+        c_brl["taxa_siscomex"] = st.number_input("Taxa Siscomex (R$)", value=float(c_brl.get("taxa_siscomex", 230.0)))
+        c_brl["taxa_anvisa"] = st.number_input("Taxa ANVISA (R$)", value=float(c_brl.get("taxa_anvisa", 536.0)))
+
+# ---------------------------------------------------------------------
+# Aba 3: Produto 1 (Kit Reagente)
+# ---------------------------------------------------------------------
+with tab_prod1:
+    st.subheader("Produto 1: Kit Reagente / Diagnóstico")
+    p1 = cen["produtos"][0]
+    
+    c1, c2, c3 = st.columns(3)
+    p1["ncm"] = c1.text_input("NCM (Prod 1)", value=p1.get("ncm", "3822.19.90"))
+    p1["quantidade"] = c2.number_input("Quantidade Importada (Kits)", value=int(p1.get("quantidade", 1440)))
+    p1["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p1.get("frete_interno_hub_brl", 1200.0)))
+
+    c4, c5 = st.columns(2)
+    p1["preco_unitario_exw_usd"] = c4.number_input("Preço Unitário EXW (USD)", value=float(p1.get("preco_unitario_exw_usd", 200.0)))
+    p1["preco_venda_unitario_brl"] = c5.number_input("Preço de Venda BR (R$/kit)", value=float(p1.get("preco_venda_unitario_brl", 9600.0)))
+
+    st.markdown("---")
+    st.markdown("**Alíquotas de Importação & Vendas (Kit Reagente)**")
+    ca1, ca2, ca3, ca4 = st.columns(4)
+    p1["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p1["aliquotas_importacao"].get("ii", 0.0)) * 100) / 100
+    p1["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p1["aliquotas_importacao"].get("ipi", 0.0)) * 100) / 100
+    p1["aliquotas_venda"]["icms"] = ca3.number_input("ICMS Saída (%)", value=float(p1["aliquotas_venda"].get("icms", 0.04)) * 100) / 100
+    p1["aliquotas_venda"]["operador_var"] = ca4.number_input("Comissão Operador Var (%)", value=float(p1["aliquotas_venda"].get("operador_var", 0.04)) * 100) / 100
+
+# ---------------------------------------------------------------------
+# Aba 4: Produto 2 (Leitor Óptico)
+# ---------------------------------------------------------------------
+with tab_prod2:
+    st.subheader("Produto 2: Leitor Óptico")
+    p2 = cen["produtos"][1]
+    
+    c1, c2, c3 = st.columns(3)
+    p2["ncm"] = c1.text_input("NCM (Prod 2)", value=p2.get("ncm", "9027.50.20"))
+    p2["quantidade"] = c2.number_input("Quantidade Importada (Unidades)", value=int(p2.get("quantidade", 160)))
+    p2["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p2.get("frete_interno_hub_brl", 800.0)))
+
+    c4, c5 = st.columns(2)
+    p2["preco_unitario_exw_usd"] = c4.number_input("Preço Unitário EXW (USD/unid)", value=float(p2.get("preco_unitario_exw_usd", 5000.0)))
+    p2["preco_venda_unitario_brl"] = c5.number_input("Preço de Venda BR (R$/unid)", value=float(p2.get("preco_venda_unitario_brl", 280000.0)))
+
+    st.markdown("---")
+    st.markdown("**Alíquotas de Importação (Leitor Óptico)**")
+    ca1, ca2, ca3, ca4, ca5 = st.columns(5)
+    p2["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p2["aliquotas_importacao"].get("ii", 0.14)) * 100) / 100
+    p2["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p2["aliquotas_importacao"].get("ipi", 0.0975)) * 100) / 100
+    p2["aliquotas_importacao"]["pis"] = ca3.number_input("PIS Importação (%)", value=float(p2["aliquotas_importacao"].get("pis", 0.021)) * 100) / 100
+    p2["aliquotas_importacao"]["cofins"] = ca4.number_input("COFINS Importação (%)", value=float(p2["aliquotas_importacao"].get("cofins", 0.0965)) * 100) / 100
+    p2["aliquotas_importacao"]["icms"] = ca5.number_input("ICMS Importação SP (%)", value=float(p2["aliquotas_importacao"].get("icms", 0.18)) * 100) / 100
+
+# ---------------------------------------------------------------------
+# Aba 5: Opex e Estrutura Societária
+# ---------------------------------------------------------------------
+with tab_opex:
+    st.subheader("Estrutura Fixa Operacional e Regras de Dividendos")
+    soc = cen["estrutura_opex_e_societaria"]
+    
+    c1, c2, c3 = st.columns(3)
+    soc["opex_fixo_mensal_brl"] = c1.number_input("Opex Fixo Mensal (R$)", value=float(soc.get("opex_fixo_mensal_brl", 200000.0)), step=10000.0)
+    soc["participacao_matriz_eua_pct"] = c2.number_input("Participação Matriz EUA (%)", value=float(soc.get("participacao_matriz_eua_pct", 0.75)) * 100) / 100
+    soc["participacao_socios_locais_sp_pct"] = c3.number_input("Participação Sócios SP (%)", value=float(soc.get("participacao_socios_locais_sp_pct", 0.25)) * 100) / 100
+
+st.markdown("---")
+
+# =====================================================================
+# PROCESSAMENTO DA SIMULAÇÃO
+# =====================================================================
 if btn_calcular:
     if not user_api_key:
-        st.error("⚠️ Insira uma chave válida da API do Gemini para rodar a simulação.")
+        st.error("⚠️ Insira uma chave válida da API do Gemini na barra lateral para rodar a simulação.")
     else:
         with st.spinner("Conectando aos Agentes de IA e processando memória de cálculo aduaneira e fiscal..."):
             try:
-                # Montar payloads de entrada
+                # Montagem automática dos Payloads atualizados a partir do Session State
                 payload_imp = {
-                    "ptax": ptax,
-                    "uf_destino": uf_destino,
-                    "custos_compartilhados_usd": {
-                        "frete_internacional_aereo": 9000.00,
-                        "frete_origem": 1500.00,
-                        "seguro_internacional": 500.00,
-                        "despacho_miami": 500.00,
-                        "locacao_uld_rap": 5000.00
-                    },
-                    "custos_compartilhados_brl": {
-                        "armazenagem_terminal": 21000.00,
-                        "despachante_aduaneiro": 7000.00,
-                        "taxa_siscomex": 230.00,
-                        "taxa_anvisa": 536.00
-                    },
+                    "ptax": cen["parametros_globais"]["ptax"],
+                    "uf_destino": cen["parametros_globais"]["uf_destino"],
+                    "custos_compartilhados_usd": cen["custos_compartilhados_usd"],
+                    "custos_compartilhados_brl": cen["custos_compartilhados_brl"],
                     "produtos": [
                         {
-                            "nome_produto": "Kit Reagente / Diagnóstico",
-                            "ncm": "3822.19.90",
-                            "quantidade": q1,
-                            "preco_unitario_exw_usd": p1_exw,
-                            "frete_interno_hub_brl": 1200.0,
-                            "aliquotas": {"ii": 0.0, "ipi": 0.0, "pis": 0.0, "cofins": 0.0, "icms_sp": 0.0},
-                            "creditos": {"credita_ipi": False, "credita_icms": False}
+                            "nome_produto": cen["produtos"][0]["nome_produto"],
+                            "ncm": cen["produtos"][0]["ncm"],
+                            "quantidade": cen["produtos"][0]["quantidade"],
+                            "preco_unitario_exw_usd": cen["produtos"][0]["preco_unitario_exw_usd"],
+                            "frete_interno_hub_brl": cen["produtos"][0]["frete_interno_hub_brl"],
+                            "aliquotas": cen["produtos"][0]["aliquotas_importacao"],
+                            "creditos": cen["produtos"][0]["creditos_importacao"]
                         },
                         {
-                            "nome_produto": "Leitor Óptico",
-                            "ncm": "9027.50.20",
-                            "quantidade": q2,
-                            "preco_unitario_exw_usd": p2_exw,
-                            "frete_interno_hub_brl": 800.0,
-                            "aliquotas": {"ii": 0.14, "ipi": 0.0975, "pis": 0.021, "cofins": 0.0965, "icms_sp": 0.18},
-                            "creditos": {"credita_ipi": True, "credita_icms": True}
+                            "nome_produto": cen["produtos"][1]["nome_produto"],
+                            "ncm": cen["produtos"][1]["ncm"],
+                            "quantidade": cen["produtos"][1]["quantidade"],
+                            "preco_unitario_exw_usd": cen["produtos"][1]["preco_unitario_exw_usd"],
+                            "frete_interno_hub_brl": cen["produtos"][1]["frete_interno_hub_brl"],
+                            "aliquotas": cen["produtos"][1]["aliquotas_importacao"],
+                            "creditos": cen["produtos"][1]["creditos_importacao"]
                         }
                     ]
                 }
@@ -248,41 +418,40 @@ if btn_calcular:
                 payload_com = {
                     "premissas_venda": [
                         {
-                            "nome_produto": "Kit Reagente / Diagnóstico",
-                            "unidades_vendidas": q1,
-                            "preco_venda_unitario_brl": v1_brl,
-                            "aliquotas_venda": {"icms": 0.04, "pis": 0.0065, "cofins": 0.03, "operador_var": 0.04}
+                            "nome_produto": cen["produtos"][0]["nome_produto"],
+                            "unidades_vendidas": cen["produtos"][0]["quantidade"],
+                            "preco_venda_unitario_brl": cen["produtos"][0]["preco_venda_unitario_brl"],
+                            "aliquotas_venda": cen["produtos"][0]["aliquotas_venda"]
                         },
                         {
-                            "nome_produto": "Leitor Óptico",
-                            "unidades_vendidas": q2,
-                            "preco_venda_unitario_brl": v2_brl,
-                            "aliquotas_venda": {"icms": 0.18, "pis": 0.0065, "cofins": 0.03, "operador_var": 0.0}
+                            "nome_produto": cen["produtos"][1]["nome_produto"],
+                            "unidades_vendidas": cen["produtos"][1]["quantidade"],
+                            "preco_venda_unitario_brl": cen["produtos"][1]["preco_venda_unitario_brl"],
+                            "aliquotas_venda": cen["produtos"][1]["aliquotas_venda"]
                         }
                     ],
-                    "opex_fixo_mensal_brl": opex_fixo,
-                    "meses_operacao": 1,
-                    "participacao_matriz_eua_pct": 0.75,
-                    "retencao_dividendos_pct": 0.10,
-                    "custo_remessa_pct": 0.01
+                    "opex_fixo_mensal_brl": cen["estrutura_opex_e_societaria"]["opex_fixo_mensal_brl"],
+                    "meses_operacao": cen["estrutura_opex_e_societaria"].get("meses_operacao", 1),
+                    "participacao_matriz_eua_pct": cen["estrutura_opex_e_societaria"]["participacao_matriz_eua_pct"],
+                    "retencao_dividendos_pct": cen["estrutura_opex_e_societaria"].get("retencao_dividendos_pct", 0.10),
+                    "custo_remessa_pct": cen["estrutura_opex_e_societaria"].get("custo_remessa_pct", 0.01)
                 }
 
-                # Chamar Pipeline
                 resultado = executar_pipeline_ia(user_api_key, payload_imp, payload_com)
                 st.session_state["resultado_dre"] = resultado
                 st.success("✅ Simulação concluída com sucesso!")
             except Exception as e:
                 st.error(f"Erro no processamento da IA: {e}")
 
-# Renderização do Resultado em Session State
+# =====================================================================
+# RENDERIZAÇÃO DOS RESULTADOS (DRE & RELATÓRIOS)
+# =====================================================================
 if "resultado_dre" in st.session_state:
     res: DREReportSynvitta = st.session_state["resultado_dre"]
     lr, lp = res.lucro_real, res.lucro_presumido
 
-    # Banner Recomendação
     st.info(f"💡 **Recomendação Fiscal:** {res.regime_recomendado}")
 
-    # Cards de KPIs
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Receita Bruta Total", f"R$ {lr.receita_bruta_total_brl:,.2f}")
     c2.metric("Lucro Líquido (Lucro Real)", f"R$ {lr.lucro_liquido_brasil_brl:,.2f}", f"Margem: {lr.margem_liquida_pct:.1f}%")
@@ -290,7 +459,6 @@ if "resultado_dre" in st.session_state:
     diff = lr.lucro_liquido_brasil_brl - lp.lucro_liquido_brasil_brl
     c4.metric("Vantagem do Lucro Real", f"R$ {diff:,.2f}", delta=f"{diff:,.2f}")
 
-    # Abas Principais
     t1, t2, t3, t4 = st.tabs(["📊 Comparativo DRE", "📦 Análise por Produto", "🇺🇸 Fluxo EUA", "📥 Exportação & Downloads"])
 
     with t1:
@@ -348,7 +516,6 @@ if "resultado_dre" in st.session_state:
         st.subheader("📥 Exportação dos Resultados")
         col_ex, col_js = st.columns(2)
 
-        # Download Excel
         excel_data = gerar_excel_bytes(res)
         col_ex.download_button(
             label="📊 Baixar Relatório Completo em Excel (.xlsx)",
@@ -358,7 +525,6 @@ if "resultado_dre" in st.session_state:
             use_container_width=True
         )
 
-        # Download JSON
         json_bytes = res.model_dump_json(indent=2).encode("utf-8")
         col_js.download_button(
             label="📄 Baixar Arquivo JSON Estrito",
