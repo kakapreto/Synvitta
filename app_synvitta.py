@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 import os
@@ -35,11 +36,14 @@ st.markdown("""
     /* Top Banner / Cabeçalho */
     .header-container {
         background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        padding: 24px;
+        padding: 24px 32px;
         border-radius: 12px;
         color: white;
         margin-bottom: 24px;
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
     .header-title {
         font-size: 1.8rem;
@@ -52,6 +56,13 @@ st.markdown("""
         font-size: 0.95rem;
         color: #94A3B8;
         margin-top: 4px;
+    }
+    .header-logo {
+        max-height: 55px;
+        background-color: #FFFFFF;
+        padding: 8px 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
 
     /* Cards de KPI Executivos */
@@ -137,6 +148,13 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Função para converter imagem local em Base64
+def obter_imagem_base64(caminho_imagem: str) -> str:
+    if os.path.exists(caminho_imagem):
+        with open(caminho_imagem, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode("utf-8")
+    return ""
 
 # =====================================================================
 # GERENCIAMENTO DE ESTADO E CENÁRIOS PADRÃO
@@ -293,7 +311,7 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     payload_comercial["landed_cost_input"] = landed_json
     prompt_agente2 = """
     Você é o Controller Financeiro e Tributarista da Synvitta L.A.
-    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculated no Landed Cost.
+    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculado no Landed Cost.
     Considere créditos na importação (Lucro Real) e regras de presunção (Lucro Presumido).
     Responda EXCLUSIVAMENTE com o JSON do schema DREReportSynvitta.
     """
@@ -386,12 +404,18 @@ st.sidebar.markdown("---")
 btn_calcular = st.sidebar.button("🚀 Executar Simulação via IA", type="primary", use_container_width=True)
 
 # =====================================================================
-# PAINEL PRINCIPAL - HEADER CORPORATIVO E ABAS DE ENTRADA
+# PAINEL PRINCIPAL - HEADER CORPORATIVO COM LOGO
 # =====================================================================
-st.markdown("""
+logo_b64 = obter_imagem_base64("logo_synvitta.png")
+logo_html = f'<img src="data:image/png;base64,{logo_b64}" class="header-logo">' if logo_b64 else ''
+
+st.markdown(f"""
 <div class="header-container">
-    <div class="header-title">Synvitta L.A. — Simulador de IA, Landed Cost & DRE</div>
-    <div class="header-subtitle">Automação de Engenharia Financeira Aduaneira Multiproduto & Planejamento Tributário Comparativo</div>
+    <div>
+        <div class="header-title">Synvitta L.A. — Simulador de IA, Landed Cost & DRE</div>
+        <div class="header-subtitle">Automação de Engenharia Financeira Aduaneira Multiproduto & Planejamento Tributário Comparativo</div>
+    </div>
+    {logo_html}
 </div>
 """, unsafe_allow_html=True)
 
