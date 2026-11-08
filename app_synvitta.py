@@ -9,7 +9,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 # =====================================================================
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT
+# CONFIGURAÇÃO DA PÁGINA STREAMLIT & ESTILIZAÇÃO CSS CORPORATIVA
 # =====================================================================
 st.set_page_config(
     page_title="Synvitta L.A. - Landed Cost & DRE IA",
@@ -17,6 +17,126 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Injeção de CSS de Alta Fidelidade Visual
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Fundo da Aplicação */
+    .stApp {
+        background-color: #F8FAFC;
+    }
+
+    /* Top Banner / Cabeçalho */
+    .header-container {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        padding: 24px;
+        border-radius: 12px;
+        color: white;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+    .header-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: #F8FAFC;
+        margin: 0;
+    }
+    .header-subtitle {
+        font-size: 0.95rem;
+        color: #94A3B8;
+        margin-top: 4px;
+    }
+
+    /* Cards de KPI Executivos */
+    div[data-testid="stMetric"] {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        padding: 16px 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    div[data-testid="stMetricLabel"] {
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        color: #64748B !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    div[data-testid="stMetricValue"] {
+        font-size: 1.6rem !important;
+        font-weight: 700 !important;
+        color: #0F172A !important;
+    }
+
+    /* Estilização dos Botões Principais */
+    .stButton>button {
+        background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
+        color: #FFFFFF;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 10px 16px;
+        box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.25);
+        transition: all 0.2s ease;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #0369A1 0%, #075985 100%);
+        box-shadow: 0 6px 12px -2px rgba(2, 132, 199, 0.35);
+        color: #FFFFFF;
+    }
+
+    /* Customização das Abas (Tabs) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #E2E8F0;
+        padding: 6px;
+        border-radius: 10px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        border-radius: 6px;
+        background-color: transparent;
+        color: #475569;
+        font-weight: 500;
+        font-size: 0.9rem;
+        border: none;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Sidebar Customizada */
+    section[data-testid="stSidebar"] {
+        background-color: #0F172A;
+    }
+    section[data-testid="stSidebar"] * {
+        color: #E2E8F0 !important;
+    }
+    section[data-testid="stSidebar"] .stTextInput input, 
+    section[data-testid="stSidebar"] .stNumberInput input {
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+        border: 1px solid #334155 !important;
+        border-radius: 6px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # =====================================================================
 # GERENCIAMENTO DE ESTADO E CENÁRIOS PADRÃO
@@ -173,7 +293,7 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     payload_comercial["landed_cost_input"] = landed_json
     prompt_agente2 = """
     Você é o Controller Financeiro e Tributarista da Synvitta L.A.
-    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculado no Landed Cost.
+    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculated no Landed Cost.
     Considere créditos na importação (Lucro Real) e regras de presunção (Lucro Presumido).
     Responda EXCLUSIVAMENTE com o JSON do schema DREReportSynvitta.
     """
@@ -235,14 +355,15 @@ def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
 # =====================================================================
 # SIDEBAR - AUTENTICAÇÃO E GESTÃO DE CENÁRIOS JSON
 # =====================================================================
-st.sidebar.title("🧬 Synvitta L.A. - Painel")
+st.sidebar.markdown("### 🧬 Synvitta L.A.")
+st.sidebar.markdown("**Painel de Controle**")
 
 api_key_env = st.secrets.get("GEMINI_API_KEY", "")
 user_api_key = st.sidebar.text_input("Chave da API Gemini", value=api_key_env, type="password")
 
-st.sidebar.subheader("📂 Gestão de Cenários (JSON)")
+st.sidebar.markdown("---")
+st.sidebar.markdown("📂 **Gestão de Cenários (JSON)**")
 
-# Upload de Cenário
 uploaded_file = st.sidebar.file_uploader("Importar Cenário JSON", type=["json"])
 if uploaded_file is not None:
     try:
@@ -252,38 +373,38 @@ if uploaded_file is not None:
     except Exception as e:
         st.sidebar.error(f"Erro ao ler JSON: {e}")
 
-# Exportação de Cenário
 cenario_json_bytes = json.dumps(st.session_state["cenario"], indent=2, ensure_ascii=False).encode("utf-8")
 st.sidebar.download_button(
-    label="💾 Baixar Cenário Atual (JSON)",
+    label="💾 Baixar Cenário (JSON)",
     data=cenario_json_bytes,
     file_name="cenario_synvitta.json",
     mime="application/json",
     use_container_width=True
 )
 
+st.sidebar.markdown("---")
 btn_calcular = st.sidebar.button("🚀 Executar Simulação via IA", type="primary", use_container_width=True)
 
 # =====================================================================
-# PAINEL PRINCIPAL - ABAS VISUAIS DE ENTRADA DE DADOS
+# PAINEL PRINCIPAL - HEADER CORPORATIVO E ABAS DE ENTRADA
 # =====================================================================
-st.title("🧬 Synvitta L.A. — Simulador Integrado de IA & DRE")
-st.caption("Automação de Landed Cost Multiproduto + Comparativo Tributário Lucro Real vs. Presumido")
+st.markdown("""
+<div class="header-container">
+    <div class="header-title">Synvitta L.A. — Simulador de IA, Landed Cost & DRE</div>
+    <div class="header-subtitle">Automação de Engenharia Financeira Aduaneira Multiproduto & Planejamento Tributário Comparativo</div>
+</div>
+""", unsafe_allow_html=True)
 
-# Atalho rápido do cenário em memória
 cen = st.session_state["cenario"]
 
 tab_globais, tab_fretes, tab_prod1, tab_prod2, tab_opex = st.tabs([
     "🌐 1. Câmbio & Localização",
-    "✈️ 2. Fretes & Despesas Aduaneiras",
+    "✈️ 2. Fretes & Aduana",
     "📦 3. Kit Reagente",
     "🔬 4. Leitor Óptico",
-    "🏢 5. Opex & Regras Societárias"
+    "🏢 5. Opex & Societário"
 ])
 
-# ---------------------------------------------------------------------
-# Aba 1: Parâmetros Globais
-# ---------------------------------------------------------------------
 with tab_globais:
     st.subheader("Parâmetros Gerais do Lote")
     col1, col2, col3 = st.columns(3)
@@ -291,9 +412,6 @@ with tab_globais:
     cen["parametros_globais"]["ptax"] = col2.number_input("Câmbio PTAX (BRL/USD)", value=float(cen["parametros_globais"].get("ptax", 5.60)), step=0.05)
     cen["parametros_globais"]["uf_destino"] = col3.selectbox("UF de Destino", ["SP", "MG", "RJ", "PR", "SC"], index=0)
 
-# ---------------------------------------------------------------------
-# Aba 2: Fretes e Custos Compartilhados
-# ---------------------------------------------------------------------
 with tab_fretes:
     st.subheader("Custos Compartilhados da Operação")
     col_usd, col_brl = st.columns(2)
@@ -315,9 +433,6 @@ with tab_fretes:
         c_brl["taxa_siscomex"] = st.number_input("Taxa Siscomex (R$)", value=float(c_brl.get("taxa_siscomex", 230.0)))
         c_brl["taxa_anvisa"] = st.number_input("Taxa ANVISA (R$)", value=float(c_brl.get("taxa_anvisa", 536.0)))
 
-# ---------------------------------------------------------------------
-# Aba 3: Produto 1 (Kit Reagente)
-# ---------------------------------------------------------------------
 with tab_prod1:
     st.subheader("Produto 1: Kit Reagente / Diagnóstico")
     p1 = cen["produtos"][0]
@@ -339,9 +454,6 @@ with tab_prod1:
     p1["aliquotas_venda"]["icms"] = ca3.number_input("ICMS Saída (%)", value=float(p1["aliquotas_venda"].get("icms", 0.04)) * 100) / 100
     p1["aliquotas_venda"]["operador_var"] = ca4.number_input("Comissão Operador Var (%)", value=float(p1["aliquotas_venda"].get("operador_var", 0.04)) * 100) / 100
 
-# ---------------------------------------------------------------------
-# Aba 4: Produto 2 (Leitor Óptico)
-# ---------------------------------------------------------------------
 with tab_prod2:
     st.subheader("Produto 2: Leitor Óptico")
     p2 = cen["produtos"][1]
@@ -364,11 +476,8 @@ with tab_prod2:
     p2["aliquotas_importacao"]["cofins"] = ca4.number_input("COFINS Importação (%)", value=float(p2["aliquotas_importacao"].get("cofins", 0.0965)) * 100) / 100
     p2["aliquotas_importacao"]["icms"] = ca5.number_input("ICMS Importação SP (%)", value=float(p2["aliquotas_importacao"].get("icms", 0.18)) * 100) / 100
 
-# ---------------------------------------------------------------------
-# Aba 5: Opex e Estrutura Societária
-# ---------------------------------------------------------------------
 with tab_opex:
-    st.subheader("Estrutura Fixa Operacional e Regras de Dividendos")
+    st.subheader("Estrutura Fixa Operacional e Regras Societárias")
     soc = cen["estrutura_opex_e_societaria"]
     
     c1, c2, c3 = st.columns(3)
@@ -376,7 +485,7 @@ with tab_opex:
     soc["participacao_matriz_eua_pct"] = c2.number_input("Participação Matriz EUA (%)", value=float(soc.get("participacao_matriz_eua_pct", 0.75)) * 100) / 100
     soc["participacao_socios_locais_sp_pct"] = c3.number_input("Participação Sócios SP (%)", value=float(soc.get("participacao_socios_locais_sp_pct", 0.25)) * 100) / 100
 
-st.markdown("---")
+st.markdown("<br>", unsafe_allow_html=True)
 
 # =====================================================================
 # PROCESSAMENTO DA SIMULAÇÃO
@@ -387,7 +496,6 @@ if btn_calcular:
     else:
         with st.spinner("Conectando aos Agentes de IA e processando memória de cálculo aduaneira e fiscal..."):
             try:
-                # Montagem automática dos Payloads atualizados a partir do Session State
                 payload_imp = {
                     "ptax": cen["parametros_globais"]["ptax"],
                     "uf_destino": cen["parametros_globais"]["uf_destino"],
@@ -444,7 +552,7 @@ if btn_calcular:
                 st.error(f"Erro no processamento da IA: {e}")
 
 # =====================================================================
-# RENDERIZAÇÃO DOS RESULTADOS (DRE & RELATÓRIOS)
+# RENDERIZAÇÃO DOS RESULTADOS DA SIMULAÇÃO
 # =====================================================================
 if "resultado_dre" in st.session_state:
     res: DREReportSynvitta = st.session_state["resultado_dre"]
@@ -459,6 +567,7 @@ if "resultado_dre" in st.session_state:
     diff = lr.lucro_liquido_brasil_brl - lp.lucro_liquido_brasil_brl
     c4.metric("Vantagem do Lucro Real", f"R$ {diff:,.2f}", delta=f"{diff:,.2f}")
 
+    st.markdown("<br>", unsafe_allow_html=True)
     t1, t2, t3, t4 = st.tabs(["📊 Comparativo DRE", "📦 Análise por Produto", "🇺🇸 Fluxo EUA", "📥 Exportação & Downloads"])
 
     with t1:
@@ -489,7 +598,15 @@ if "resultado_dre" in st.session_state:
                 {"Métrica": "Lucro Líquido", "Valor": lr.lucro_liquido_brasil_brl, "Regime": "Lucro Real"},
                 {"Métrica": "Lucro Líquido", "Valor": lp.lucro_liquido_brasil_brl, "Regime": "Lucro Presumido"},
             ]),
-            x="Métrica", y="Valor", color="Regime", barmode="group", title="Comparativo Visual de Lucro (BRL)"
+            x="Métrica", y="Valor", color="Regime", barmode="group",
+            color_discrete_map={"Lucro Real": "#0284C7", "Lucro Presumido": "#475569"},
+            title="Comparativo Visual de Lucro (BRL)"
+        )
+        fig_bar.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font_family="Inter",
+            font_color="#0F172A"
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
@@ -518,7 +635,7 @@ if "resultado_dre" in st.session_state:
 
         excel_data = gerar_excel_bytes(res)
         col_ex.download_button(
-            label="📊 Baixar Relatório Completo em Excel (.xlsx)",
+            label="📊 Baixar Relatório em Excel (.xlsx)",
             data=excel_data,
             file_name="synvitta3_report_executivo.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -527,7 +644,7 @@ if "resultado_dre" in st.session_state:
 
         json_bytes = res.model_dump_json(indent=2).encode("utf-8")
         col_js.download_button(
-            label="📄 Baixar Arquivo JSON Estrito",
+            label="📄 Baixar JSON do Relatório",
             data=json_bytes,
             file_name="synvitta3_report_executivo.json",
             mime="application/json",
