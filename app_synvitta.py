@@ -10,7 +10,7 @@ from google.genai import types
 from pydantic import BaseModel, Field
 
 # =====================================================================
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT & ESTILIZAÇÃO CSS CORPORATIVA
+# CONFIGURAÇÃO DA PÁGINA STREAMLIT & ESTILIZAÇÃO CSS CORPORATIVA REFORÇADA
 # =====================================================================
 st.set_page_config(
     page_title="Synvitta L.A. - Landed Cost & DRE IA",
@@ -19,132 +19,129 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Injeção de CSS de Alta Fidelidade Visual
+# Injeção de CSS Corrigida com Alto Contraste
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', sans-serif !important;
     }
 
     /* Fundo da Aplicação */
     .stApp {
-        background-color: #F8FAFC;
+        background-color: #F8FAFC !important;
     }
 
     /* Top Banner / Cabeçalho */
     .header-container {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        padding: 24px 32px;
-        border-radius: 12px;
-        color: white;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important;
+        padding: 24px 32px !important;
+        border-radius: 12px !important;
+        color: #FFFFFF !important;
+        margin-bottom: 24px !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
     }
     .header-title {
-        font-size: 1.8rem;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-        color: #F8FAFC;
-        margin: 0;
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px !important;
+        color: #F8FAFC !important;
+        margin: 0 !important;
     }
     .header-subtitle {
-        font-size: 0.95rem;
-        color: #94A3B8;
-        margin-top: 4px;
+        font-size: 0.95rem !important;
+        color: #94A3B8 !important;
+        margin-top: 4px !important;
     }
     .header-logo {
-        max-height: 55px;
-        background-color: #FFFFFF;
-        padding: 8px 12px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        max-height: 55px !important;
+        background-color: #FFFFFF !important;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
     }
 
     /* Cards de KPI Executivos */
     div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        padding: 16px 20px;
-        border-radius: 10px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background-color: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        padding: 16px 20px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
     }
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-    div[data-testid="stMetricLabel"] {
+    div[data-testid="stMetricLabel"] p {
         font-size: 0.85rem !important;
         font-weight: 600 !important;
-        color: #64748B !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        color: #475569 !important;
+        text-transform: uppercase !important;
     }
-    div[data-testid="stMetricValue"] {
+    div[data-testid="stMetricValue"] div {
         font-size: 1.6rem !important;
         font-weight: 700 !important;
         color: #0F172A !important;
     }
 
-    /* Estilização dos Botões Principais */
-    .stButton>button {
-        background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%);
-        color: #FFFFFF;
-        border-radius: 8px;
-        border: none;
-        font-weight: 600;
-        font-size: 0.95rem;
-        padding: 10px 16px;
-        box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.25);
-        transition: all 0.2s ease;
+    /* Botões Principais - Alto Contraste */
+    .stButton > button {
+        background-color: #0284C7 !important;
+        color: #FFFFFF !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        padding: 10px 18px !important;
+        box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.3) !important;
+        transition: all 0.2s ease !important;
     }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #0369A1 0%, #075985 100%);
-        box-shadow: 0 6px 12px -2px rgba(2, 132, 199, 0.35);
-        color: #FFFFFF;
+    .stButton > button:hover {
+        background-color: #0369A1 !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 6px 12px -2px rgba(2, 132, 199, 0.4) !important;
     }
 
     /* Customização das Abas (Tabs) */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: #E2E8F0;
-        padding: 6px;
-        border-radius: 10px;
+        gap: 8px !important;
+        background-color: #E2E8F0 !important;
+        padding: 6px !important;
+        border-radius: 10px !important;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        border-radius: 6px;
-        background-color: transparent;
-        color: #475569;
-        font-weight: 500;
-        font-size: 0.9rem;
-        border: none;
+        height: 42px !important;
+        border-radius: 6px !important;
+        background-color: transparent !important;
+        color: #334155 !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        border: none !important;
     }
     .stTabs [aria-selected="true"] {
         background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        font-weight: 600 !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        color: #0284C7 !important;
+        font-weight: 700 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
     }
 
-    /* Sidebar Customizada */
+    /* Sidebar Customizada com Alto Contraste */
     section[data-testid="stSidebar"] {
-        background-color: #0F172A;
+        background-color: #0F172A !important;
     }
-    section[data-testid="stSidebar"] * {
-        color: #E2E8F0 !important;
+    section[data-testid="stSidebar"] p, 
+    section[data-testid="stSidebar"] label, 
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3 {
+        color: #F8FAFC !important;
     }
-    section[data-testid="stSidebar"] .stTextInput input, 
-    section[data-testid="stSidebar"] .stNumberInput input {
+    section[data-testid="stSidebar"] input {
         background-color: #1E293B !important;
         color: #FFFFFF !important;
-        border: 1px solid #334155 !important;
-        border-radius: 6px;
+        border: 1px solid #475569 !important;
+        border-radius: 6px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -227,7 +224,7 @@ if "cenario" not in st.session_state:
     st.session_state["cenario"] = carregar_dados_iniciais()
 
 # =====================================================================
-# SCHEMAS PYDANTIC (ESTRUTURAS ESTREITAS)
+# SCHEMAS PYDANTIC
 # =====================================================================
 class LandedCostProduto(BaseModel):
     nome_produto: str
@@ -286,7 +283,7 @@ class DREReportSynvitta(BaseModel):
     economia_tributaria_anual_estimada_brl: float
 
 # =====================================================================
-# FUNÇÃO DO PIPELINE DE IA (2 AGENTES GEMINI)
+# PIPELINE IA GEMINI 3.8 FLASH
 # =====================================================================
 def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comercial: dict) -> DREReportSynvitta:
     client = genai.Client(api_key=api_key)
@@ -328,7 +325,7 @@ def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comerci
     return DREReportSynvitta.model_validate_json(res_dre.text)
 
 # =====================================================================
-# GERADOR DE EXCEL EM MEMÓRIA
+# GERADOR EXCEL
 # =====================================================================
 def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
     output = io.BytesIO()
@@ -371,7 +368,7 @@ def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
     return output.getvalue()
 
 # =====================================================================
-# SIDEBAR - AUTENTICAÇÃO E GESTÃO DE CENÁRIOS JSON
+# SIDEBAR
 # =====================================================================
 st.sidebar.markdown("### 🧬 Synvitta L.A.")
 st.sidebar.markdown("**Painel de Controle**")
@@ -404,7 +401,7 @@ st.sidebar.markdown("---")
 btn_calcular = st.sidebar.button("🚀 Executar Simulação via IA", type="primary", use_container_width=True)
 
 # =====================================================================
-# PAINEL PRINCIPAL - HEADER CORPORATIVO COM LOGO
+# PAINEL PRINCIPAL
 # =====================================================================
 logo_b64 = obter_imagem_base64("logo_synvitta.png")
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" class="header-logo">' if logo_b64 else ''
