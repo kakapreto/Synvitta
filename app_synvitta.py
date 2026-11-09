@@ -2,12 +2,18 @@ import base64
 import io
 import json
 import os
+from collections.abc import Callable
+from pathlib import Path
+from typing import TypeVar
+
+import httpx
+import httpx2
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 from google import genai
-from google.genai import types
-from pydantic import BaseModel, Field
+from google.genai import errors, types
+from pydantic import BaseModel, Field, ValidationError
 
 # =====================================================================
 # CONFIGURAÇÃO DA PÁGINA STREAMLIT & ESTILIZAÇÃO CSS CORPORATIVA REFORÇADA
@@ -156,15 +162,17 @@ def obter_imagem_base64(caminho_imagem: str) -> str:
 # =====================================================================
 # GERENCIAMENTO DE ESTADO E CENÁRIOS PADRÃO
 # =====================================================================
-DEFAULT_JSON_PATH = "dados_entrada.json"
+APP_DIR = Path(__file__).resolve().parent
+DEFAULT_JSON_PATH = APP_DIR / "dados_entrada.json"
 
 def carregar_dados_iniciais():
     if os.path.exists(DEFAULT_JSON_PATH):
         try:
             with open(DEFAULT_JSON_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError) as erro:
+            st.error(f"Não foi possível carregar as entradas salvas: {erro}")
+            st.stop()
     return {
         "parametros_globais": {
             "empresa": "Synvitta L.A. Ltda.",
@@ -285,44 +293,108 @@ class DREReportSynvitta(BaseModel):
 # =====================================================================
 # PIPELINE IA GEMINI 3.8 FLASH
 # =====================================================================
-def executar_pipeline_ia(api_key: str, payload_importacao: dict, payload_comercial: dict) -> DREReportSynvitta:
-    client = genai.Client(api_key=api_key)
+RespostaIA = TypeVar("RespostaIA", bound=BaseModel)
+
+
+def consultar_ia(
+    client: genai.Client,
+    prompt: str,
+    payload: dict,
+    schema: type[RespostaIA],
+    etapa: str,
+) -> RespostaIA:
+    try:
+        resposta = client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=json.dumps(payload, allow_nan=False),
+            config=types.GenerateContentConfig(
+                system_instruction=prompt,
+                response_mime_type="application/json",
+                response_schema=schema,
+                temperature=0.0,
+            ),
+        )
+    except errors.APIError as erro:
+        if erro.code in (429, 500, 502, 503, 504):
+            detalhe = (
+                "Gemini indisponível, com excesso de demanda ou limite de uso "
+                "atingido, mesmo após as tentativas automáticas. "
+                "Aguarde e tente novamente; confira também a cota da API."
+            )
+        elif erro.code in (400, 401, 403):
+            detalhe = "Confira a chave, as permissões e a configuração da API Gemini."
+        elif erro.code == 404:
+            detalhe = "O modelo gemini-3.8-flash não está disponível para este projeto."
+        else:
+            detalhe = f"O serviço Gemini retornou o código HTTP {erro.code}."
+        raise RuntimeError(f"{etapa}: {detalhe}") from erro
+    except (httpx.TimeoutException, httpx2.TimeoutException) as erro:
+        raise RuntimeError(
+            f"{etapa}: o Gemini excedeu o tempo limite. Tente novamente mais tarde."
+        ) from erro
+    except (httpx.TransportError, httpx2.TransportError) as erro:
+        raise RuntimeError(
+            f"{etapa}: falha de conexão com o Gemini. Tente novamente."
+        ) from erro
+
+    if not resposta.text or not resposta.text.strip():
+        raise RuntimeError(
+            f"{etapa}: o Gemini não retornou dados. A resposta pode ter sido "
+            "bloqueada ou interrompida; nenhuma simulação nova foi concluída."
+        )
+    try:
+        return schema.model_validate_json(resposta.text)
+    except ValidationError as erro:
+        raise RuntimeError(
+            f"{etapa}: o Gemini retornou dados incompletos ou fora do formato "
+            "esperado. Nenhuma simulação nova foi concluída; tente novamente."
+        ) from erro
+
+
+def executar_pipeline_ia(
+    api_key: str,
+    payload_importacao: dict,
+    payload_comercial: dict,
+    informar_etapa: Callable[[str], None] | None = None,
+) -> DREReportSynvitta:
+    """Gera as duas etapas com tempo limite e no máximo duas tentativas por etapa."""
 
     prompt_agente1 = """
     Você é o Engenheiro Financeiro Aduaneiro da Synvitta L.A.
     Calcule o rateio aduaneiro por NCM e o Landed Cost (EXW -> Hub Guarulhos/SP).
     Responda EXCLUSIVAMENTE com o JSON do schema LandedCostLoteConsolidado.
     """
-    res_landed = client.models.generate_content(
-        model='gemini-3.8-flash',
-        contents=json.dumps(payload_importacao),
-        config=types.GenerateContentConfig(
-            system_instruction=prompt_agente1,
-            response_mime_type="application/json",
-            response_schema=LandedCostLoteConsolidado,
-            temperature=0.0
-        )
-    )
-    landed_json = json.loads(res_landed.text)
-
-    payload_comercial["landed_cost_input"] = landed_json
     prompt_agente2 = """
     Você é o Controller Financeiro e Tributarista da Synvitta L.A.
     Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculado no Landed Cost.
     Considere créditos na importação (Lucro Real) e regras de presunção (Lucro Presumido).
     Responda EXCLUSIVAMENTE com o JSON do schema DREReportSynvitta.
     """
-    res_dre = client.models.generate_content(
-        model='gemini-3.8-flash',
-        contents=json.dumps(payload_comercial),
-        config=types.GenerateContentConfig(
-            system_instruction=prompt_agente2,
-            response_mime_type="application/json",
-            response_schema=DREReportSynvitta,
-            temperature=0.0
+    with genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(
+            timeout=60_000,
+            retry_options=types.HttpRetryOptions(
+                attempts=2,
+                initial_delay=2,
+                max_delay=5,
+                http_status_codes=[429, 500, 502, 503, 504],
+            ),
+        ),
+    ) as client:
+        if informar_etapa:
+            informar_etapa("1/2 — Calculando e validando o Landed Cost...")
+        landed = consultar_ia(
+            client, prompt_agente1, payload_importacao,
+            LandedCostLoteConsolidado, "Landed Cost",
         )
-    )
-    return DREReportSynvitta.model_validate_json(res_dre.text)
+        if informar_etapa:
+            informar_etapa("2/2 — Calculando e validando a DRE...")
+        return consultar_ia(
+            client, prompt_agente2,
+            {**payload_comercial, "landed_cost_input": landed.model_dump()},
+            DREReportSynvitta, "DRE",
+        )
 
 # =====================================================================
 # GERADOR EXCEL
@@ -373,8 +445,13 @@ def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
 st.sidebar.markdown("### 🧬 Synvitta L.A.")
 st.sidebar.markdown("**Painel de Controle**")
 
-api_key_env = st.secrets.get("GEMINI_API_KEY", "")
-user_api_key = st.sidebar.text_input("Chave da API Gemini", value=api_key_env, type="password")
+try:
+    api_key_env = st.secrets.get("GEMINI_API_KEY", "")
+except st.errors.StreamlitSecretNotFoundError:
+    api_key_env = os.environ.get("GEMINI_API_KEY", "")
+user_api_key = st.sidebar.text_input(
+    "Chave da API Gemini", value=api_key_env, type="password", key="gemini_api_key"
+)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("📂 **Gestão de Cenários (JSON)**")
@@ -385,7 +462,7 @@ if uploaded_file is not None:
         cenario_carregado = json.load(uploaded_file)
         st.session_state["cenario"] = cenario_carregado
         st.sidebar.success("✅ Cenário importado com sucesso!")
-    except Exception as e:
+    except (OSError, json.JSONDecodeError) as e:
         st.sidebar.error(f"Erro ao ler JSON: {e}")
 
 cenario_json_bytes = json.dumps(st.session_state["cenario"], indent=2, ensure_ascii=False).encode("utf-8")
@@ -394,16 +471,20 @@ st.sidebar.download_button(
     data=cenario_json_bytes,
     file_name="cenario_synvitta.json",
     mime="application/json",
-    use_container_width=True
+    width="stretch"
 )
 
 st.sidebar.markdown("---")
-btn_calcular = st.sidebar.button("🚀 Executar Simulação via IA", type="primary", use_container_width=True)
+btn_calcular = st.sidebar.button("🚀 Executar Simulação via IA", type="primary", width="stretch")
+st.sidebar.caption(
+    "A simulação depende da API Gemini. Cada etapa tem tempo limite de "
+    "60 segundos por tentativa e até duas tentativas em falhas temporárias."
+)
 
 # =====================================================================
 # PAINEL PRINCIPAL
 # =====================================================================
-logo_b64 = obter_imagem_base64("logo_synvitta.png")
+logo_b64 = obter_imagem_base64(str(APP_DIR / "logo_synvitta.png"))
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" class="header-logo">' if logo_b64 else ''
 
 st.markdown(f"""
@@ -461,7 +542,7 @@ with tab_prod1:
     c1, c2, c3 = st.columns(3)
     p1["ncm"] = c1.text_input("NCM (Prod 1)", value=p1.get("ncm", "3822.19.90"))
     p1["quantidade"] = c2.number_input("Quantidade Importada (Kits)", value=int(p1.get("quantidade", 1440)))
-    p1["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p1.get("frete_interno_hub_brl", 1200.0)))
+    p1["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p1.get("frete_interno_hub_brl", 1200.0)), key="p1_frete_hub")
 
     c4, c5 = st.columns(2)
     p1["preco_unitario_exw_usd"] = c4.number_input("Preço Unitário EXW (USD)", value=float(p1.get("preco_unitario_exw_usd", 200.0)))
@@ -470,8 +551,8 @@ with tab_prod1:
     st.markdown("---")
     st.markdown("**Alíquotas de Importação & Vendas (Kit Reagente)**")
     ca1, ca2, ca3, ca4 = st.columns(4)
-    p1["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p1["aliquotas_importacao"].get("ii", 0.0)) * 100) / 100
-    p1["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p1["aliquotas_importacao"].get("ipi", 0.0)) * 100) / 100
+    p1["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p1["aliquotas_importacao"].get("ii", 0.0)) * 100, key="p1_ii") / 100
+    p1["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p1["aliquotas_importacao"].get("ipi", 0.0)) * 100, key="p1_ipi") / 100
     p1["aliquotas_venda"]["icms"] = ca3.number_input("ICMS Saída (%)", value=float(p1["aliquotas_venda"].get("icms", 0.04)) * 100) / 100
     p1["aliquotas_venda"]["operador_var"] = ca4.number_input("Comissão Operador Var (%)", value=float(p1["aliquotas_venda"].get("operador_var", 0.04)) * 100) / 100
 
@@ -482,7 +563,7 @@ with tab_prod2:
     c1, c2, c3 = st.columns(3)
     p2["ncm"] = c1.text_input("NCM (Prod 2)", value=p2.get("ncm", "9027.50.20"))
     p2["quantidade"] = c2.number_input("Quantidade Importada (Unidades)", value=int(p2.get("quantidade", 160)))
-    p2["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p2.get("frete_interno_hub_brl", 800.0)))
+    p2["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p2.get("frete_interno_hub_brl", 800.0)), key="p2_frete_hub")
 
     c4, c5 = st.columns(2)
     p2["preco_unitario_exw_usd"] = c4.number_input("Preço Unitário EXW (USD/unid)", value=float(p2.get("preco_unitario_exw_usd", 5000.0)))
@@ -491,8 +572,8 @@ with tab_prod2:
     st.markdown("---")
     st.markdown("**Alíquotas de Importação (Leitor Óptico)**")
     ca1, ca2, ca3, ca4, ca5 = st.columns(5)
-    p2["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p2["aliquotas_importacao"].get("ii", 0.14)) * 100) / 100
-    p2["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p2["aliquotas_importacao"].get("ipi", 0.0975)) * 100) / 100
+    p2["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p2["aliquotas_importacao"].get("ii", 0.14)) * 100, key="p2_ii") / 100
+    p2["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p2["aliquotas_importacao"].get("ipi", 0.0975)) * 100, key="p2_ipi") / 100
     p2["aliquotas_importacao"]["pis"] = ca3.number_input("PIS Importação (%)", value=float(p2["aliquotas_importacao"].get("pis", 0.021)) * 100) / 100
     p2["aliquotas_importacao"]["cofins"] = ca4.number_input("COFINS Importação (%)", value=float(p2["aliquotas_importacao"].get("cofins", 0.0965)) * 100) / 100
     p2["aliquotas_importacao"]["icms"] = ca5.number_input("ICMS Importação SP (%)", value=float(p2["aliquotas_importacao"].get("icms", 0.18)) * 100) / 100
@@ -512,10 +593,11 @@ st.markdown("<br>", unsafe_allow_html=True)
 # PROCESSAMENTO DA SIMULAÇÃO
 # =====================================================================
 if btn_calcular:
-    if not user_api_key:
+    if not user_api_key.strip():
         st.error("⚠️ Insira uma chave válida da API do Gemini na barra lateral para rodar a simulação.")
     else:
-        with st.spinner("Conectando aos Agentes de IA e processando memória de cálculo aduaneira e fiscal..."):
+        st.session_state.pop("resultado_dre", None)
+        with st.status("Processando simulação...", expanded=True) as status:
             try:
                 payload_imp = {
                     "ptax": cen["parametros_globais"]["ptax"],
@@ -545,6 +627,8 @@ if btn_calcular:
                 }
 
                 payload_com = {
+                    "empresa": cen["parametros_globais"]["empresa"],
+                    "ptax": cen["parametros_globais"]["ptax"],
                     "premissas_venda": [
                         {
                             "nome_produto": cen["produtos"][0]["nome_produto"],
@@ -566,17 +650,22 @@ if btn_calcular:
                     "custo_remessa_pct": cen["estrutura_opex_e_societaria"].get("custo_remessa_pct", 0.01)
                 }
 
-                resultado = executar_pipeline_ia(user_api_key, payload_imp, payload_com)
-                st.session_state["resultado_dre"] = resultado
+                resultado = executar_pipeline_ia(
+                    user_api_key.strip(), payload_imp, payload_com,
+                    informar_etapa=st.write,
+                )
+                st.session_state["resultado_dre"] = resultado.model_dump()
+                status.update(label="Simulação concluída — resultados abaixo", state="complete", expanded=False)
                 st.success("✅ Simulação concluída com sucesso!")
-            except Exception as e:
-                st.error(f"Erro no processamento da IA: {e}")
+            except (RuntimeError, ValueError) as erro:
+                status.update(label="Não foi possível concluir a simulação", state="error", expanded=True)
+                st.error(str(erro))
 
 # =====================================================================
 # RENDERIZAÇÃO DOS RESULTADOS DA SIMULAÇÃO
 # =====================================================================
 if "resultado_dre" in st.session_state:
-    res: DREReportSynvitta = st.session_state["resultado_dre"]
+    res = DREReportSynvitta.model_validate(st.session_state["resultado_dre"])
     lr, lp = res.lucro_real, res.lucro_presumido
 
     st.info(f"💡 **Recomendação Fiscal:** {res.regime_recomendado}")
@@ -610,7 +699,7 @@ if "resultado_dre" in st.session_state:
                 lp.operacao_variavel_brl, lp.ebitda_brl, lp.irpj_csll_brl, lp.lucro_liquido_brasil_brl
             ]
         })
-        st.dataframe(df_comp.style.format({"Lucro Real": "R$ {:,.2f}", "Lucro Presumido": "R$ {:,.2f}"}), use_container_width=True)
+        st.dataframe(df_comp.style.format({"Lucro Real": "R$ {:,.2f}", "Lucro Presumido": "R$ {:,.2f}"}), width="stretch")
 
         fig_bar = px.bar(
             pd.DataFrame([
@@ -629,7 +718,7 @@ if "resultado_dre" in st.session_state:
             font_family="Inter",
             font_color="#0F172A"
         )
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.plotly_chart(fig_bar, width="stretch")
 
     with t2:
         st.subheader("Margem de Contribuição por Produto (Lucro Real)")
@@ -642,7 +731,7 @@ if "resultado_dre" in st.session_state:
                 "cmv_brl": "R$ {:,.2f}",
                 "lucro_bruto_brl": "R$ {:,.2f}",
                 "margem_contribucao_pct": "{:.2f}%"
-            }), use_container_width=True)
+            }), width="stretch")
 
     with t3:
         st.subheader("Distribuição de Resultados: Matriz EUA vs. Filial SP")
@@ -660,7 +749,7 @@ if "resultado_dre" in st.session_state:
             data=excel_data,
             file_name="synvitta3_report_executivo.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
+            width="stretch"
         )
 
         json_bytes = res.model_dump_json(indent=2).encode("utf-8")
@@ -669,5 +758,5 @@ if "resultado_dre" in st.session_state:
             data=json_bytes,
             file_name="synvitta3_report_executivo.json",
             mime="application/json",
-            use_container_width=True
+            width="stretch"
         )
