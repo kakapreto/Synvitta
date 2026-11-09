@@ -1,762 +1,424 @@
 import base64
 import io
 import json
-import os
-from collections.abc import Callable
 from pathlib import Path
-from typing import TypeVar
 
-import httpx
-import httpx2
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from google import genai
-from google.genai import errors, types
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
 
-# =====================================================================
-# CONFIGURAÇÃO DA PÁGINA STREAMLIT & ESTILIZAÇÃO CSS CORPORATIVA REFORÇADA
-# =====================================================================
+from calculos_synvitta import Cenario, DREReportSynvitta, calcular_cenario, cenario_padrao
+
+
 st.set_page_config(
-    page_title="Synvitta L.A. - Landed Cost & DRE IA",
-    page_icon="🧬",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="Synvitta L.A. - Landed Cost & DRE",
+    page_icon="🧬", layout="wide", initial_sidebar_state="expanded",
 )
 
-# Injeção de CSS Corrigida com Alto Contraste
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif !important;
-    }
-
-    /* Fundo da Aplicação */
-    .stApp {
-        background-color: #F8FAFC !important;
-    }
-
-    /* Top Banner / Cabeçalho */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
+    .stApp { background-color: #F8FAFC !important; }
     .header-container {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important;
-        padding: 24px 32px !important;
-        border-radius: 12px !important;
-        color: #FFFFFF !important;
-        margin-bottom: 24px !important;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        padding: 24px 32px; border-radius: 12px; color: #FFFFFF;
+        margin-bottom: 24px; box-shadow: 0 4px 12px rgba(15,23,42,.12);
+        display: flex; align-items: center; justify-content: space-between;
     }
-    .header-title {
-        font-size: 1.8rem !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.5px !important;
-        color: #F8FAFC !important;
-        margin: 0 !important;
-    }
-    .header-subtitle {
-        font-size: 0.95rem !important;
-        color: #94A3B8 !important;
-        margin-top: 4px !important;
-    }
-    .header-logo {
-        max-height: 55px !important;
-        background-color: #FFFFFF !important;
-        padding: 8px 12px !important;
-        border-radius: 8px !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
-    }
-
-    /* Cards de KPI Executivos */
+    .header-title { font-size: 1.8rem; font-weight: 700; color: #F8FAFC; }
+    .header-subtitle { font-size: .95rem; color: #94A3B8; margin-top: 4px; }
+    .header-logo { max-height: 55px; background: #FFFFFF; padding: 8px 12px; border-radius: 8px; }
     div[data-testid="stMetric"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #CBD5E1 !important;
-        padding: 16px 20px !important;
-        border-radius: 10px !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+        background: #FFFFFF; border: 1px solid #CBD5E1; padding: 16px 20px; border-radius: 10px;
     }
-    div[data-testid="stMetricLabel"] p {
-        font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        color: #475569 !important;
-        text-transform: uppercase !important;
-    }
-    div[data-testid="stMetricValue"] div {
-        font-size: 1.6rem !important;
-        font-weight: 700 !important;
-        color: #0F172A !important;
-    }
-
-    /* Botões Principais - Alto Contraste */
-    .stButton > button {
-        background-color: #0284C7 !important;
-        color: #FFFFFF !important;
-        border-radius: 8px !important;
-        border: none !important;
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
-        padding: 10px 18px !important;
-        box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.3) !important;
-        transition: all 0.2s ease !important;
-    }
-    .stButton > button:hover {
-        background-color: #0369A1 !important;
-        color: #FFFFFF !important;
-        box-shadow: 0 6px 12px -2px rgba(2, 132, 199, 0.4) !important;
-    }
-
-    /* Customização das Abas (Tabs) */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px !important;
-        background-color: #E2E8F0 !important;
-        padding: 6px !important;
-        border-radius: 10px !important;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 42px !important;
-        border-radius: 6px !important;
-        background-color: transparent !important;
-        color: #334155 !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-        border: none !important;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #FFFFFF !important;
-        color: #0284C7 !important;
-        font-weight: 700 !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
-    }
-
-    /* Sidebar Customizada com Alto Contraste */
-    section[data-testid="stSidebar"] {
-        background-color: #0F172A !important;
-    }
-    section[data-testid="stSidebar"] p, 
-    section[data-testid="stSidebar"] label, 
-    section[data-testid="stSidebar"] h1, 
-    section[data-testid="stSidebar"] h2, 
-    section[data-testid="stSidebar"] h3 {
-        color: #F8FAFC !important;
-    }
-    section[data-testid="stSidebar"] input {
-        background-color: #1E293B !important;
-        color: #FFFFFF !important;
-        border: 1px solid #475569 !important;
-        border-radius: 6px !important;
-    }
+    div[data-testid="stMetricLabel"] p { color: #475569; font-weight: 600; }
+    div[data-testid="stMetricValue"] { color: #0F172A; }
+    .stButton > button { background: #0284C7; color: #FFFFFF; border-radius: 8px; }
+    section[data-testid="stSidebar"] { background-color: #0F172A; }
+    section[data-testid="stSidebar"] :is(p,label,h1,h2,h3) { color: #F8FAFC; }
 </style>
 """, unsafe_allow_html=True)
 
-# Função para converter imagem local em Base64
-def obter_imagem_base64(caminho_imagem: str) -> str:
-    if os.path.exists(caminho_imagem):
-        with open(caminho_imagem, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode("utf-8")
-    return ""
-
-# =====================================================================
-# GERENCIAMENTO DE ESTADO E CENÁRIOS PADRÃO
-# =====================================================================
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_JSON_PATH = APP_DIR / "dados_entrada.json"
 
-def carregar_dados_iniciais():
-    if os.path.exists(DEFAULT_JSON_PATH):
-        try:
-            with open(DEFAULT_JSON_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except (OSError, json.JSONDecodeError) as erro:
-            st.error(f"Não foi possível carregar as entradas salvas: {erro}")
-            st.stop()
-    return {
-        "parametros_globais": {
-            "empresa": "Synvitta L.A. Ltda.",
-            "ptax": 5.60,
-            "uf_destino": "SP",
-            "incoterm": "EXW",
-            "hub_nacionalizacao": "Guarulhos/SP"
-        },
-        "custos_compartilhados_usd": {
-            "frete_internacional_aereo": 9000.00,
-            "frete_origem": 1500.00,
-            "seguro_internacional": 500.00,
-            "despacho_miami": 500.00,
-            "locacao_uld_rap": 5000.00
-        },
-        "custos_compartilhados_brl": {
-            "armazenagem_terminal": 21000.00,
-            "despachante_aduaneiro": 7000.00,
-            "taxa_siscomex": 230.00,
-            "taxa_anvisa": 536.00
-        },
-        "produtos": [
-            {
-                "nome_produto": "Kit Reagente / Diagnóstico",
-                "ncm": "3822.19.90",
-                "quantidade": 1440,
-                "preco_unitario_exw_usd": 200.00,
-                "preco_venda_unitario_brl": 9600.00,
-                "frete_interno_hub_brl": 1200.00,
-                "aliquotas_importacao": {"ii": 0.0, "ipi": 0.0, "pis": 0.0, "cofins": 0.0, "icms": 0.0},
-                "creditos_importacao": {"credita_ipi": False, "credita_icms": False},
-                "aliquotas_venda": {"icms": 0.04, "pis": 0.0065, "cofins": 0.03, "operador_var": 0.04}
-            },
-            {
-                "nome_produto": "Leitor Óptico",
-                "ncm": "9027.50.20",
-                "quantidade": 160,
-                "preco_unitario_exw_usd": 5000.00,
-                "preco_venda_unitario_brl": 280000.00,
-                "frete_interno_hub_brl": 800.00,
-                "aliquotas_importacao": {"ii": 0.14, "ipi": 0.0975, "pis": 0.021, "cofins": 0.0965, "icms": 0.18},
-                "creditos_importacao": {"credita_ipi": True, "credita_icms": True},
-                "aliquotas_venda": {"icms": 0.18, "pis": 0.0065, "cofins": 0.03, "operador_var": 0.0}
-            }
-        ],
-        "estrutura_opex_e_societaria": {
-            "opex_fixo_mensal_brl": 200000.00,
-            "meses_operacao": 1,
-            "participacao_matriz_eua_pct": 0.75,
-            "participacao_socios_locais_sp_pct": 0.25,
-            "retencao_dividendos_pct": 0.10,
-            "custo_remessa_pct": 0.01
-        }
+
+def moeda(valor: float) -> str:
+    return "R$ " + f"{valor:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+
+
+def assinatura(cenario: dict) -> str:
+    return json.dumps(cenario, sort_keys=True, ensure_ascii=False, allow_nan=False)
+
+
+def carregar_dados_iniciais() -> dict:
+    if DEFAULT_JSON_PATH.exists():
+        return Cenario.model_validate_json(
+            DEFAULT_JSON_PATH.read_text(encoding="utf-8")
+        ).model_dump()
+    return cenario_padrao().model_dump()
+
+
+def importar_cenario() -> None:
+    arquivo = st.session_state["arquivo_cenario"]
+    if arquivo is None:
+        return
+    try:
+        novo = Cenario.model_validate_json(arquivo.getvalue())
+    except (ValueError, ValidationError) as erro:
+        st.session_state["erro_importacao"] = f"Cenário não importado: {erro}"
+        return
+    for chave in list(st.session_state):
+        if chave.startswith("entrada:"):
+            del st.session_state[chave]
+    st.session_state["cenario"] = novo.model_dump()
+    st.session_state.pop("resultado_dre", None)
+    st.session_state.pop("assinatura_resultado", None)
+    st.session_state.pop("erro_importacao", None)
+
+
+def campo(
+    dados: dict, chave: str, rotulo: str, prefixo: str, *,
+    percentual: bool = False, minimo: float = 0.0, maximo: float | None = None,
+) -> None:
+    atual = dados[chave]
+    inteiro = isinstance(atual, int) and not isinstance(atual, bool)
+    fator = 100 if percentual else 1
+    valor = atual if inteiro else float(atual) * fator
+    minimo_widget = int(minimo) if inteiro else float(minimo)
+    maximo_widget = int(maximo) if inteiro and maximo is not None else maximo
+    novo = st.number_input(
+        rotulo, value=valor, min_value=minimo_widget,
+        max_value=maximo_widget, step=1 if inteiro else 0.01,
+        key=f"entrada:{prefixo}:{chave}",
+    )
+    dados[chave] = novo / fator if percentual else novo
+
+
+def checkbox(dados: dict, chave: str, rotulo: str, prefixo: str) -> None:
+    dados[chave] = st.checkbox(
+        rotulo, value=dados[chave], key=f"entrada:{prefixo}:{chave}"
+    )
+
+
+def tabela_dre(relatorio: DREReportSynvitta) -> pd.DataFrame:
+    linhas = {
+        "Receita Bruta Total": "receita_bruta_total_brl",
+        "(-) Tributos sobre Vendas": "tributos_venda_total_brl",
+        "(=) Receita Líquida": "receita_liquida_total_brl",
+        "(-) CMV Nacionalizado": "cmv_total_brl",
+        "(=) Lucro Bruto": "lucro_bruto_total_brl",
+        "(-) Opex Fixo": "opex_fixo_brl",
+        "(-) Operação Variável": "operacao_variavel_brl",
+        "(=) EBITDA estimado": "ebitda_brl",
+        "Base de IRPJ": "base_irpj_brl",
+        "Base de CSLL": "base_csll_brl",
+        "IRPJ (15%)": "irpj_brl",
+        "Adicional de IRPJ": "adicional_irpj_brl",
+        "CSLL (9%)": "csll_brl",
+        "(-) Total IRPJ / CSLL": "irpj_csll_brl",
+        "(=) Lucro Líquido Brasil": "lucro_liquido_brasil_brl",
+        "Dividendos brutos da matriz": "dividendos_matriz_brutos_brl",
+        "Retenção sobre dividendos": "retencao_dividendos_brl",
+        "Custo da remessa": "custo_remessa_brl",
+        "Remessa líquida à matriz": "remessa_matriz_eua_brl",
+        "Parcela do lucro dos sócios locais": "parcela_socios_locais_brl",
     }
-
-if "cenario" not in st.session_state:
-    st.session_state["cenario"] = carregar_dados_iniciais()
-
-# =====================================================================
-# SCHEMAS PYDANTIC
-# =====================================================================
-class LandedCostProduto(BaseModel):
-    nome_produto: str
-    ncm: str
-    quantidade: float
-    valor_exw_total_usd: float
-    cif_total_brl: float
-    landed_cost_bruto_total_brl: float
-    creditos_tributarios_recuperaveis_brl: float
-    custo_estoque_liquido_cmv_brl: float
-    custo_unitario_cmv_brl: float
-
-class LandedCostLoteConsolidado(BaseModel):
-    ptax_utilizada: float
-    valor_exw_total_lote_usd: float
-    cif_total_lote_brl: float
-    landed_cost_bruto_lote_brl: float
-    creditos_totais_lote_brl: float
-    custo_estoque_liquido_lote_brl: float
-    produtos: list[LandedCostProduto]
-
-class DREItemProduto(BaseModel):
-    nome_produto: str
-    unidades_vendidas: float
-    receita_bruta_brl: float
-    tributos_venda_brl: float
-    receita_liquida_brl: float
-    cmv_brl: float
-    lucro_bruto_brl: float
-    margem_contribucao_pct: float
-
-class DREDetalhadaRegime(BaseModel):
-    regime_tributario: str
-    receita_bruta_total_brl: float
-    tributos_venda_total_brl: float
-    receita_liquida_total_brl: float
-    cmv_total_brl: float
-    lucro_bruto_total_brl: float
-    opex_fixo_brl: float
-    operacao_variavel_brl: float
-    ebitda_brl: float
-    irpj_csll_brl: float
-    lucro_liquido_brasil_brl: float
-    margem_liquida_pct: float
-    remessa_matriz_eua_brl: float
-    lucro_retido_filial_sp_brl: float
-    itens_produtos: list[DREItemProduto]
-
-class DREReportSynvitta(BaseModel):
-    projeto: str = "synvitta3_report"
-    empresa: str = "Synvitta L.A. Ltda."
-    ptax: float
-    lucro_real: DREDetalhadaRegime
-    lucro_presumido: DREDetalhadaRegime
-    regime_recomendado: str = Field(description="Recomendação tributária fundamentada em 1 frase.")
-    economia_tributaria_anual_estimada_brl: float
-
-# =====================================================================
-# PIPELINE IA GEMINI 3.8 FLASH
-# =====================================================================
-RespostaIA = TypeVar("RespostaIA", bound=BaseModel)
+    return pd.DataFrame({
+        "Etapa DRE": list(linhas),
+        "Lucro Real estimado": [getattr(relatorio.lucro_real, k) for k in linhas.values()],
+        "Lucro Presumido": [getattr(relatorio.lucro_presumido, k) for k in linhas.values()],
+    })
 
 
-def consultar_ia(
-    client: genai.Client,
-    prompt: str,
-    payload: dict,
-    schema: type[RespostaIA],
-    etapa: str,
-) -> RespostaIA:
-    try:
-        resposta = client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=json.dumps(payload, allow_nan=False),
-            config=types.GenerateContentConfig(
-                system_instruction=prompt,
-                response_mime_type="application/json",
-                response_schema=schema,
-                temperature=0.0,
-            ),
-        )
-    except errors.APIError as erro:
-        if erro.code in (429, 500, 502, 503, 504):
-            detalhe = (
-                "Gemini indisponível, com excesso de demanda ou limite de uso "
-                "atingido, mesmo após as tentativas automáticas. "
-                "Aguarde e tente novamente; confira também a cota da API."
-            )
-        elif erro.code in (400, 401, 403):
-            detalhe = "Confira a chave, as permissões e a configuração da API Gemini."
-        elif erro.code == 404:
-            detalhe = "O modelo gemini-3.8-flash não está disponível para este projeto."
-        else:
-            detalhe = f"O serviço Gemini retornou o código HTTP {erro.code}."
-        raise RuntimeError(f"{etapa}: {detalhe}") from erro
-    except (httpx.TimeoutException, httpx2.TimeoutException) as erro:
-        raise RuntimeError(
-            f"{etapa}: o Gemini excedeu o tempo limite. Tente novamente mais tarde."
-        ) from erro
-    except (httpx.TransportError, httpx2.TransportError) as erro:
-        raise RuntimeError(
-            f"{etapa}: falha de conexão com o Gemini. Tente novamente."
-        ) from erro
-
-    if not resposta.text or not resposta.text.strip():
-        raise RuntimeError(
-            f"{etapa}: o Gemini não retornou dados. A resposta pode ter sido "
-            "bloqueada ou interrompida; nenhuma simulação nova foi concluída."
-        )
-    try:
-        return schema.model_validate_json(resposta.text)
-    except ValidationError as erro:
-        raise RuntimeError(
-            f"{etapa}: o Gemini retornou dados incompletos ou fora do formato "
-            "esperado. Nenhuma simulação nova foi concluída; tente novamente."
-        ) from erro
-
-
-def executar_pipeline_ia(
-    api_key: str,
-    payload_importacao: dict,
-    payload_comercial: dict,
-    informar_etapa: Callable[[str], None] | None = None,
-) -> DREReportSynvitta:
-    """Gera as duas etapas com tempo limite e no máximo duas tentativas por etapa."""
-
-    prompt_agente1 = """
-    Você é o Engenheiro Financeiro Aduaneiro da Synvitta L.A.
-    Calcule o rateio aduaneiro por NCM e o Landed Cost (EXW -> Hub Guarulhos/SP).
-    Responda EXCLUSIVAMENTE com o JSON do schema LandedCostLoteConsolidado.
-    """
-    prompt_agente2 = """
-    Você é o Controller Financeiro e Tributarista da Synvitta L.A.
-    Gere a DRE comparativa (Lucro Real vs. Presumido) utilizando o CMV calculado no Landed Cost.
-    Considere créditos na importação (Lucro Real) e regras de presunção (Lucro Presumido).
-    Responda EXCLUSIVAMENTE com o JSON do schema DREReportSynvitta.
-    """
-    with genai.Client(
-        api_key=api_key,
-        http_options=types.HttpOptions(
-            timeout=60_000,
-            retry_options=types.HttpRetryOptions(
-                attempts=2,
-                initial_delay=2,
-                max_delay=5,
-                http_status_codes=[429, 500, 502, 503, 504],
-            ),
-        ),
-    ) as client:
-        if informar_etapa:
-            informar_etapa("1/2 — Calculando e validando o Landed Cost...")
-        landed = consultar_ia(
-            client, prompt_agente1, payload_importacao,
-            LandedCostLoteConsolidado, "Landed Cost",
-        )
-        if informar_etapa:
-            informar_etapa("2/2 — Calculando e validando a DRE...")
-        return consultar_ia(
-            client, prompt_agente2,
-            {**payload_comercial, "landed_cost_input": landed.model_dump()},
-            DREReportSynvitta, "DRE",
-        )
-
-# =====================================================================
-# GERADOR EXCEL
-# =====================================================================
-def gerar_excel_bytes(dre_data: DREReportSynvitta) -> bytes:
+def gerar_excel_bytes(relatorio: DREReportSynvitta) -> bytes:
     output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_resumo = pd.DataFrame([
-            {"Parâmetro": "Empresa", "Valor": dre_data.empresa},
-            {"Parâmetro": "Taxa de Câmbio (PTAX)", "Valor": f"R$ {dre_data.ptax:.2f}"},
-            {"Parâmetro": "Regime Recomendado", "Valor": dre_data.regime_recomendado},
-            {"Parâmetro": "Economia Estimada (BRL)", "Valor": dre_data.economia_tributaria_anual_estimada_brl}
-        ])
-        df_resumo.to_excel(writer, sheet_name="Resumo", index=False)
-
-        lr, lp = dre_data.lucro_real, dre_data.lucro_presumido
-        df_dre = pd.DataFrame({
-            "Linha DRE": [
-                "Receita Bruta", "(-) Impostos sobre Vendas", "(=) Receita Líquida",
-                "(-) CMV Nacionalizado", "(=) Lucro Bruto", "(-) Opex Fixo",
-                "(-) Operação Variável", "(=) EBITDA", "(-) IRPJ / CSLL", "(=) Lucro Líquido Brasil",
-                "Remessa Matriz EUA (75%)", "Retido Filial SP (25%)"
-            ],
-            "Lucro Real (R$)": [
-                lr.receita_bruta_total_brl, lr.tributos_venda_total_brl, lr.receita_liquida_total_brl,
-                lr.cmv_total_brl, lr.lucro_bruto_total_brl, lr.opex_fixo_brl,
-                lr.operacao_variavel_brl, lr.ebitda_brl, lr.irpj_csll_brl, lr.lucro_liquido_brasil_brl,
-                lr.remessa_matriz_eua_brl, lr.lucro_retido_filial_sp_brl
-            ],
-            "Lucro Presumido (R$)": [
-                lp.receita_bruta_total_brl, lp.tributos_venda_total_brl, lp.receita_liquida_total_brl,
-                lp.cmv_total_brl, lp.lucro_bruto_total_brl, lp.opex_fixo_brl,
-                lp.operacao_variavel_brl, lp.ebitda_brl, lp.irpj_csll_brl, lp.lucro_liquido_brasil_brl,
-                lp.remessa_matriz_eua_brl, lp.lucro_retido_filial_sp_brl
-            ]
-        })
-        df_dre.to_excel(writer, sheet_name="DRE_Comparativa", index=False)
-
-        if lr.itens_produtos:
-            df_prod = pd.DataFrame([p.model_dump() for p in lr.itens_produtos])
-            df_prod.to_excel(writer, sheet_name="Produtos_LucroReal", index=False)
-
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        pd.DataFrame([
+            {"Parâmetro": "Empresa", "Valor": relatorio.empresa},
+            {"Parâmetro": "PTAX (BRL/USD)", "Valor": relatorio.ptax},
+            {"Parâmetro": "Ano", "Valor": relatorio.premissas.tributacao.ano},
+            {"Parâmetro": "Trimestre", "Valor": relatorio.premissas.tributacao.trimestre},
+            {"Parâmetro": "Comparação condicional", "Valor": relatorio.regime_recomendado},
+            {"Parâmetro": "Diferença no trimestre (BRL)",
+             "Valor": relatorio.economia_tributaria_periodo_brl},
+        ]).to_excel(writer, sheet_name="Resumo", index=False)
+        tabela_dre(relatorio).to_excel(writer, sheet_name="DRE_Comparativa", index=False)
+        for nome, regime in (
+            ("Produtos_LucroReal", relatorio.lucro_real),
+            ("Produtos_Presumido", relatorio.lucro_presumido),
+        ):
+            pd.DataFrame([p.model_dump() for p in regime.itens_produtos]).to_excel(
+                writer, sheet_name=nome, index=False
+            )
+        pd.DataFrame([
+            p.model_dump() for p in relatorio.landed_cost.produtos
+        ]).to_excel(writer, sheet_name="Landed_Cost", index=False)
+        pd.DataFrame({"Premissas e limitações": relatorio.avisos}).to_excel(
+            writer, sheet_name="Memoria_e_Avisos", index=False
+        )
+        pd.json_normalize(relatorio.premissas.model_dump()).astype(str).to_excel(
+            writer, sheet_name="Entradas", index=False
+        )
     return output.getvalue()
 
-# =====================================================================
-# SIDEBAR
-# =====================================================================
+
+if not st.session_state.get("motor_local_v1"):
+    try:
+        st.session_state["cenario"] = (
+            Cenario.model_validate(st.session_state["cenario"]).model_dump()
+            if "cenario" in st.session_state else carregar_dados_iniciais()
+        )
+    except (OSError, ValueError) as erro:
+        st.error(f"Não foi possível carregar as entradas: {erro}")
+        st.stop()
+    st.session_state.pop("resultado_dre", None)
+    st.session_state.pop("assinatura_resultado", None)
+    st.session_state["motor_local_v1"] = True
+
 st.sidebar.markdown("### 🧬 Synvitta L.A.")
 st.sidebar.markdown("**Painel de Controle**")
-
-try:
-    api_key_env = st.secrets.get("GEMINI_API_KEY", "")
-except st.errors.StreamlitSecretNotFoundError:
-    api_key_env = os.environ.get("GEMINI_API_KEY", "")
-user_api_key = st.sidebar.text_input(
-    "Chave da API Gemini", value=api_key_env, type="password", key="gemini_api_key"
+st.sidebar.info("Cálculos locais em Python. Não requer chave nem API de IA.")
+st.sidebar.file_uploader(
+    "Importar Cenário JSON", type=["json"], key="arquivo_cenario",
+    on_change=importar_cenario,
 )
+if "erro_importacao" in st.session_state:
+    st.sidebar.error(st.session_state["erro_importacao"])
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("📂 **Gestão de Cenários (JSON)**")
-
-uploaded_file = st.sidebar.file_uploader("Importar Cenário JSON", type=["json"])
-if uploaded_file is not None:
-    try:
-        cenario_carregado = json.load(uploaded_file)
-        st.session_state["cenario"] = cenario_carregado
-        st.sidebar.success("✅ Cenário importado com sucesso!")
-    except (OSError, json.JSONDecodeError) as e:
-        st.sidebar.error(f"Erro ao ler JSON: {e}")
-
-cenario_json_bytes = json.dumps(st.session_state["cenario"], indent=2, ensure_ascii=False).encode("utf-8")
-st.sidebar.download_button(
-    label="💾 Baixar Cenário (JSON)",
-    data=cenario_json_bytes,
-    file_name="cenario_synvitta.json",
-    mime="application/json",
-    width="stretch"
-)
-
-st.sidebar.markdown("---")
-btn_calcular = st.sidebar.button("🚀 Executar Simulação via IA", type="primary", width="stretch")
-st.sidebar.caption(
-    "A simulação depende da API Gemini. Cada etapa tem tempo limite de "
-    "60 segundos por tentativa e até duas tentativas em falhas temporárias."
-)
-
-# =====================================================================
-# PAINEL PRINCIPAL
-# =====================================================================
-logo_b64 = obter_imagem_base64(str(APP_DIR / "logo_synvitta.png"))
-logo_html = f'<img src="data:image/png;base64,{logo_b64}" class="header-logo">' if logo_b64 else ''
-
+logo = APP_DIR / "logo_synvitta.png"
+logo_html = ""
+if logo.exists():
+    imagem = base64.b64encode(logo.read_bytes()).decode("ascii")
+    logo_html = f'<img src="data:image/png;base64,{imagem}" class="header-logo" alt="Synvitta">'
 st.markdown(f"""
-<div class="header-container">
-    <div>
-        <div class="header-title">Synvitta L.A. — Simulador de IA, Landed Cost & DRE</div>
-        <div class="header-subtitle">Automação de Engenharia Financeira Aduaneira Multiproduto & Planejamento Tributário Comparativo</div>
-    </div>
-    {logo_html}
-</div>
+<div class="header-container"><div>
+    <div class="header-title">Synvitta L.A. — Landed Cost &amp; DRE</div>
+    <div class="header-subtitle">Cálculo local multiproduto e comparação tributária estimada</div>
+</div>{logo_html}</div>
 """, unsafe_allow_html=True)
+st.warning(
+    "Estimativa gerencial, não apuração fiscal. Os valores do lote são o total "
+    "do trimestre, sem multiplicar por três. Alíquotas e créditos exigem validação contábil."
+)
 
 cen = st.session_state["cenario"]
-
-tab_globais, tab_fretes, tab_prod1, tab_prod2, tab_opex = st.tabs([
-    "🌐 1. Câmbio & Localização",
-    "✈️ 2. Fretes & Aduana",
-    "📦 3. Kit Reagente",
-    "🔬 4. Leitor Óptico",
-    "🏢 5. Opex & Societário"
+abas = st.tabs([
+    "🌐 1. Câmbio & Localização", "✈️ 2. Fretes & Aduana",
+    "📦 3. Kit Reagente", "🔬 4. Leitor Óptico",
+    "🏢 5. Opex & Societário", "6. Período & Tributos",
 ])
+with abas[0]:
+    globais = cen["parametros_globais"]
+    globais["empresa"] = st.text_input(
+        "Empresa", value=globais["empresa"], key="entrada:global:empresa"
+    )
+    campo(globais, "ptax", "Câmbio PTAX (BRL/USD)", "global", minimo=0.01)
+    globais["uf_destino"] = st.text_input(
+        "UF de Destino", value=globais["uf_destino"], key="entrada:global:uf"
+    )
 
-with tab_globais:
-    st.subheader("Parâmetros Gerais do Lote")
-    col1, col2, col3 = st.columns(3)
-    cen["parametros_globais"]["empresa"] = col1.text_input("Empresa", value=cen["parametros_globais"].get("empresa", "Synvitta L.A. Ltda."))
-    cen["parametros_globais"]["ptax"] = col2.number_input("Câmbio PTAX (BRL/USD)", value=float(cen["parametros_globais"].get("ptax", 5.60)), step=0.05)
-    cen["parametros_globais"]["uf_destino"] = col3.selectbox("UF de Destino", ["SP", "MG", "RJ", "PR", "SC"], index=0)
+with abas[1]:
+    st.caption("Rateio dos custos comuns proporcional ao valor EXW de cada produto.")
+    for chave, rotulo in (
+        ("frete_internacional_aereo", "Frete Internacional Aéreo (USD/lote)"),
+        ("frete_origem", "Frete de Origem (USD/lote)"),
+        ("seguro_internacional", "Seguro até a importação (USD/lote)"),
+        ("despacho_miami", "Despacho Miami total (USD/lote)"),
+        ("locacao_uld_rap", "Locação ULD/RAP total (USD/lote)"),
+        ("despacho_na_va", "Despacho incluído na VA (USD/lote)"),
+        ("locacao_na_va", "Locação incluída na VA (USD/lote)"),
+    ):
+        campo(cen["custos_compartilhados_usd"], chave, rotulo, "usd")
+    st.caption("Revise documentalmente as parcelas de despacho e ULD incluídas na VA.")
+    for chave, rotulo in (
+        ("armazenagem_terminal", "Armazenagem Terminal (R$/lote)"),
+        ("despachante_aduaneiro", "Despachante Aduaneiro (R$/lote)"),
+        ("taxa_siscomex", "Taxa Siscomex (R$/lote)"),
+        ("taxa_anvisa", "Taxa ANVISA (R$/lote)"),
+        ("outras_parcelas_base_icms", "Outras parcelas na base ICMS, já nos custos (R$/lote)"),
+    ):
+        campo(cen["custos_compartilhados_brl"], chave, rotulo, "brl")
 
-with tab_fretes:
-    st.subheader("Custos Compartilhados da Operação")
-    col_usd, col_brl = st.columns(2)
+for indice, aba in enumerate(abas[2:4]):
+    with aba:
+        produto = cen["produtos"][indice]
+        prefixo = f"p{indice + 1}"
+        st.subheader(produto["nome_produto"])
+        produto["ncm"] = st.text_input(
+            "NCM", value=produto["ncm"], key=f"entrada:{prefixo}:ncm"
+        )
+        for chave, rotulo, minimo in (
+            ("quantidade", "Quantidade importada e vendida no trimestre", 1),
+            ("preco_unitario_exw_usd", "Preço Unitário EXW (USD)", 0.01),
+            ("preco_venda_unitario_brl", "Preço de Venda BR, sem IPI de saída (R$/unid)", 0),
+            ("frete_interno_hub_brl", "Frete Interno Hub/SP (R$/produto no lote)", 0),
+        ):
+            campo(produto, chave, rotulo, prefixo, minimo=minimo)
+        st.markdown("**Alíquotas de importação**")
+        for tributo in ("ii", "ipi", "pis", "cofins", "icms"):
+            campo(
+                produto["aliquotas_importacao"], tributo,
+                f"{tributo.upper()} Importação (%)", prefixo + ":importacao",
+                percentual=True, maximo=99.99 if tributo == "icms" else 100.0,
+            )
+        checkbox(produto["creditos_importacao"], "credita_ipi",
+                 "IPI-importação recuperável (confirmar elegibilidade)", prefixo + ":credito")
+        checkbox(produto["creditos_importacao"], "credita_icms",
+                 "ICMS-importação recuperável", prefixo + ":credito")
+        st.markdown("**Alíquotas de venda — Lucro Presumido**")
+        for tributo in ("icms", "pis", "cofins", "operador_var"):
+            campo(
+                produto["aliquotas_venda"], tributo, f"{tributo.upper()} Venda (%)",
+                prefixo + ":venda", percentual=True, maximo=100.0,
+            )
+        st.markdown("**Lucro Real estimado — PIS/Cofins**")
+        st.caption(
+            "ICMS e comissão são os mesmos nos dois regimes. Informe apenas "
+            "créditos de importação comprovadamente recuperáveis; zero significa "
+            "nenhum crédito considerado. Créditos saem do CMV, não são abatidos novamente na DRE."
+        )
+        for chave, rotulo in (
+            ("pis_venda_real", "PIS Venda — Real (%)"),
+            ("cofins_venda_real", "COFINS Venda — Real (%)"),
+        ):
+            campo(produto, chave, rotulo, prefixo, percentual=True, maximo=100.0)
+        for chave, rotulo in (
+            ("credito_pis_importacao_real_brl", "Crédito PIS-importação — Real (R$/produto)"),
+            ("credito_cofins_importacao_real_brl", "Crédito COFINS-importação — Real (R$/produto)"),
+        ):
+            campo(produto, chave, rotulo, prefixo)
 
-    with col_usd:
-        st.markdown("**Custos em USD (Origem / Trecho Internacional)**")
-        c_usd = cen["custos_compartilhados_usd"]
-        c_usd["frete_internacional_aereo"] = st.number_input("Frete Internacional Aéreo (USD)", value=float(c_usd.get("frete_internacional_aereo", 9000.0)))
-        c_usd["frete_origem"] = st.number_input("Frete de Origem (USD)", value=float(c_usd.get("frete_origem", 1500.0)))
-        c_usd["seguro_internacional"] = st.number_input("Seguro Internacional (USD)", value=float(c_usd.get("seguro_internacional", 500.0)))
-        c_usd["despacho_miami"] = st.number_input("Despacho Miami (USD)", value=float(c_usd.get("despacho_miami", 500.0)))
-        c_usd["locacao_uld_rap"] = st.number_input("Locação ULD/RAP (USD)", value=float(c_usd.get("locacao_uld_rap", 5000.0)))
-
-    with col_brl:
-        st.markdown("**Custos em BRL (Despesas Locais Terminal / Despacho)**")
-        c_brl = cen["custos_compartilhados_brl"]
-        c_brl["armazenagem_terminal"] = st.number_input("Armazenagem Terminal (R$)", value=float(c_brl.get("armazenagem_terminal", 21000.0)))
-        c_brl["despachante_aduaneiro"] = st.number_input("Despachante Aduaneiro (R$)", value=float(c_brl.get("despachante_aduaneiro", 7000.0)))
-        c_brl["taxa_siscomex"] = st.number_input("Taxa Siscomex (R$)", value=float(c_brl.get("taxa_siscomex", 230.0)))
-        c_brl["taxa_anvisa"] = st.number_input("Taxa ANVISA (R$)", value=float(c_brl.get("taxa_anvisa", 536.0)))
-
-with tab_prod1:
-    st.subheader("Produto 1: Kit Reagente / Diagnóstico")
-    p1 = cen["produtos"][0]
-    
-    c1, c2, c3 = st.columns(3)
-    p1["ncm"] = c1.text_input("NCM (Prod 1)", value=p1.get("ncm", "3822.19.90"))
-    p1["quantidade"] = c2.number_input("Quantidade Importada (Kits)", value=int(p1.get("quantidade", 1440)))
-    p1["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p1.get("frete_interno_hub_brl", 1200.0)), key="p1_frete_hub")
-
-    c4, c5 = st.columns(2)
-    p1["preco_unitario_exw_usd"] = c4.number_input("Preço Unitário EXW (USD)", value=float(p1.get("preco_unitario_exw_usd", 200.0)))
-    p1["preco_venda_unitario_brl"] = c5.number_input("Preço de Venda BR (R$/kit)", value=float(p1.get("preco_venda_unitario_brl", 9600.0)))
-
-    st.markdown("---")
-    st.markdown("**Alíquotas de Importação & Vendas (Kit Reagente)**")
-    ca1, ca2, ca3, ca4 = st.columns(4)
-    p1["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p1["aliquotas_importacao"].get("ii", 0.0)) * 100, key="p1_ii") / 100
-    p1["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p1["aliquotas_importacao"].get("ipi", 0.0)) * 100, key="p1_ipi") / 100
-    p1["aliquotas_venda"]["icms"] = ca3.number_input("ICMS Saída (%)", value=float(p1["aliquotas_venda"].get("icms", 0.04)) * 100) / 100
-    p1["aliquotas_venda"]["operador_var"] = ca4.number_input("Comissão Operador Var (%)", value=float(p1["aliquotas_venda"].get("operador_var", 0.04)) * 100) / 100
-
-with tab_prod2:
-    st.subheader("Produto 2: Leitor Óptico")
-    p2 = cen["produtos"][1]
-    
-    c1, c2, c3 = st.columns(3)
-    p2["ncm"] = c1.text_input("NCM (Prod 2)", value=p2.get("ncm", "9027.50.20"))
-    p2["quantidade"] = c2.number_input("Quantidade Importada (Unidades)", value=int(p2.get("quantidade", 160)))
-    p2["frete_interno_hub_brl"] = c3.number_input("Frete Interno Hub/SP (R$)", value=float(p2.get("frete_interno_hub_brl", 800.0)), key="p2_frete_hub")
-
-    c4, c5 = st.columns(2)
-    p2["preco_unitario_exw_usd"] = c4.number_input("Preço Unitário EXW (USD/unid)", value=float(p2.get("preco_unitario_exw_usd", 5000.0)))
-    p2["preco_venda_unitario_brl"] = c5.number_input("Preço de Venda BR (R$/unid)", value=float(p2.get("preco_venda_unitario_brl", 280000.0)))
-
-    st.markdown("---")
-    st.markdown("**Alíquotas de Importação (Leitor Óptico)**")
-    ca1, ca2, ca3, ca4, ca5 = st.columns(5)
-    p2["aliquotas_importacao"]["ii"] = ca1.number_input("II Importação (%)", value=float(p2["aliquotas_importacao"].get("ii", 0.14)) * 100, key="p2_ii") / 100
-    p2["aliquotas_importacao"]["ipi"] = ca2.number_input("IPI Importação (%)", value=float(p2["aliquotas_importacao"].get("ipi", 0.0975)) * 100, key="p2_ipi") / 100
-    p2["aliquotas_importacao"]["pis"] = ca3.number_input("PIS Importação (%)", value=float(p2["aliquotas_importacao"].get("pis", 0.021)) * 100) / 100
-    p2["aliquotas_importacao"]["cofins"] = ca4.number_input("COFINS Importação (%)", value=float(p2["aliquotas_importacao"].get("cofins", 0.0965)) * 100) / 100
-    p2["aliquotas_importacao"]["icms"] = ca5.number_input("ICMS Importação SP (%)", value=float(p2["aliquotas_importacao"].get("icms", 0.18)) * 100) / 100
-
-with tab_opex:
-    st.subheader("Estrutura Fixa Operacional e Regras Societárias")
+with abas[4]:
     soc = cen["estrutura_opex_e_societaria"]
-    
-    c1, c2, c3 = st.columns(3)
-    soc["opex_fixo_mensal_brl"] = c1.number_input("Opex Fixo Mensal (R$)", value=float(soc.get("opex_fixo_mensal_brl", 200000.0)), step=10000.0)
-    soc["participacao_matriz_eua_pct"] = c2.number_input("Participação Matriz EUA (%)", value=float(soc.get("participacao_matriz_eua_pct", 0.75)) * 100) / 100
-    soc["participacao_socios_locais_sp_pct"] = c3.number_input("Participação Sócios SP (%)", value=float(soc.get("participacao_socios_locais_sp_pct", 0.25)) * 100) / 100
+    campo(soc, "opex_fixo_mensal_brl", "Opex Fixo Mensal (R$)", "soc")
+    campo(soc, "meses_operacao", "Meses de opex no trimestre", "soc", minimo=1, maximo=3)
+    for chave, rotulo in (
+        ("participacao_matriz_eua_pct", "Participação Matriz EUA (%)"),
+        ("participacao_socios_locais_sp_pct", "Participação Sócios SP (%)"),
+        ("retencao_dividendos_pct", "Retenção sobre dividendos (%)"),
+        ("custo_remessa_pct", "Custo da remessa, após retenção (%)"),
+    ):
+        campo(soc, chave, rotulo, "soc", percentual=True, maximo=100.0)
 
-st.markdown("<br>", unsafe_allow_html=True)
+with abas[5]:
+    fiscal = cen["tributacao"]
+    fiscal["ano"] = st.selectbox(
+        "Ano-calendário", [2025, 2026], index=[2025, 2026].index(fiscal["ano"]),
+        key="entrada:fiscal:ano",
+    )
+    campo(fiscal, "trimestre", "Trimestre completo de apuração", "fiscal", minimo=1, maximo=4)
+    st.caption(
+        "Modelo de comércio. Presunção padrão: IRPJ 8% e CSLL 12%. LC 224/2025: "
+        "acréscimo de 10% dos coeficientes sobre a receita acima de R$ 1.250.000 "
+        "no trimestre. Em 2026, IRPJ desde Q1 e CSLL desde Q2. Não inclui ajuste anual "
+        "de limites entre trimestres nem início/encerramento em trimestre incompleto."
+    )
+    for chave, rotulo in (
+        ("base_presumida_irpj", "Base presumida IRPJ (%)"),
+        ("base_presumida_csll", "Base presumida CSLL (%)"),
+    ):
+        campo(fiscal, chave, rotulo, "fiscal", percentual=True, maximo=100.0)
+    checkbox(fiscal, "excluir_icms_base_pis_cofins",
+             "Excluir ICMS destacado da base de PIS/Cofins sobre vendas", "fiscal")
+    campo(fiscal, "adicoes_real_brl", "Adições à base do Lucro Real/CSLL (R$)", "fiscal")
+    campo(fiscal, "exclusoes_real_brl", "Exclusões da base do Lucro Real/CSLL (R$)", "fiscal")
+    st.caption(
+        "Adições/exclusões aplicadas igualmente ao IRPJ e à CSLL nesta estimativa. "
+        "IRPJ: 15% + adicional de 10% acima de R$ 60 mil/trimestre; CSLL: 9%."
+    )
+    st.markdown(
+        "[IRPJ — Receita Federal](https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/tributos/IRPJ) · "
+        "[LC 224/2025](https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp224.htm) · "
+        "[Classif](https://portalunico.siscomex.gov.br/classif/)"
+    )
 
-# =====================================================================
-# PROCESSAMENTO DA SIMULAÇÃO
-# =====================================================================
-if btn_calcular:
-    if not user_api_key.strip():
-        st.error("⚠️ Insira uma chave válida da API do Gemini na barra lateral para rodar a simulação.")
+st.sidebar.download_button(
+    "💾 Baixar Cenário (JSON)", data=json.dumps(cen, indent=2, ensure_ascii=False),
+    file_name="cenario_synvitta.json", mime="application/json", width="stretch",
+)
+if st.sidebar.button("Executar simulação local", type="primary", width="stretch"):
+    st.session_state.pop("resultado_dre", None)
+    try:
+        resultado = calcular_cenario(Cenario.model_validate(cen))
+    except ValueError as erro:
+        st.error(f"Não foi possível calcular: {erro}")
     else:
-        st.session_state.pop("resultado_dre", None)
-        with st.status("Processando simulação...", expanded=True) as status:
-            try:
-                payload_imp = {
-                    "ptax": cen["parametros_globais"]["ptax"],
-                    "uf_destino": cen["parametros_globais"]["uf_destino"],
-                    "custos_compartilhados_usd": cen["custos_compartilhados_usd"],
-                    "custos_compartilhados_brl": cen["custos_compartilhados_brl"],
-                    "produtos": [
-                        {
-                            "nome_produto": cen["produtos"][0]["nome_produto"],
-                            "ncm": cen["produtos"][0]["ncm"],
-                            "quantidade": cen["produtos"][0]["quantidade"],
-                            "preco_unitario_exw_usd": cen["produtos"][0]["preco_unitario_exw_usd"],
-                            "frete_interno_hub_brl": cen["produtos"][0]["frete_interno_hub_brl"],
-                            "aliquotas": cen["produtos"][0]["aliquotas_importacao"],
-                            "creditos": cen["produtos"][0]["creditos_importacao"]
-                        },
-                        {
-                            "nome_produto": cen["produtos"][1]["nome_produto"],
-                            "ncm": cen["produtos"][1]["ncm"],
-                            "quantidade": cen["produtos"][1]["quantidade"],
-                            "preco_unitario_exw_usd": cen["produtos"][1]["preco_unitario_exw_usd"],
-                            "frete_interno_hub_brl": cen["produtos"][1]["frete_interno_hub_brl"],
-                            "aliquotas": cen["produtos"][1]["aliquotas_importacao"],
-                            "creditos": cen["produtos"][1]["creditos_importacao"]
-                        }
-                    ]
-                }
+        st.session_state["resultado_dre"] = resultado.model_dump()
+        st.session_state["assinatura_resultado"] = assinatura(cen)
+        st.success("Simulação local concluída — resultados abaixo.")
 
-                payload_com = {
-                    "empresa": cen["parametros_globais"]["empresa"],
-                    "ptax": cen["parametros_globais"]["ptax"],
-                    "premissas_venda": [
-                        {
-                            "nome_produto": cen["produtos"][0]["nome_produto"],
-                            "unidades_vendidas": cen["produtos"][0]["quantidade"],
-                            "preco_venda_unitario_brl": cen["produtos"][0]["preco_venda_unitario_brl"],
-                            "aliquotas_venda": cen["produtos"][0]["aliquotas_venda"]
-                        },
-                        {
-                            "nome_produto": cen["produtos"][1]["nome_produto"],
-                            "unidades_vendidas": cen["produtos"][1]["quantidade"],
-                            "preco_venda_unitario_brl": cen["produtos"][1]["preco_venda_unitario_brl"],
-                            "aliquotas_venda": cen["produtos"][1]["aliquotas_venda"]
-                        }
-                    ],
-                    "opex_fixo_mensal_brl": cen["estrutura_opex_e_societaria"]["opex_fixo_mensal_brl"],
-                    "meses_operacao": cen["estrutura_opex_e_societaria"].get("meses_operacao", 1),
-                    "participacao_matriz_eua_pct": cen["estrutura_opex_e_societaria"]["participacao_matriz_eua_pct"],
-                    "retencao_dividendos_pct": cen["estrutura_opex_e_societaria"].get("retencao_dividendos_pct", 0.10),
-                    "custo_remessa_pct": cen["estrutura_opex_e_societaria"].get("custo_remessa_pct", 0.01)
-                }
-
-                resultado = executar_pipeline_ia(
-                    user_api_key.strip(), payload_imp, payload_com,
-                    informar_etapa=st.write,
-                )
-                st.session_state["resultado_dre"] = resultado.model_dump()
-                status.update(label="Simulação concluída — resultados abaixo", state="complete", expanded=False)
-                st.success("✅ Simulação concluída com sucesso!")
-            except (RuntimeError, ValueError) as erro:
-                status.update(label="Não foi possível concluir a simulação", state="error", expanded=True)
-                st.error(str(erro))
-
-# =====================================================================
-# RENDERIZAÇÃO DOS RESULTADOS DA SIMULAÇÃO
-# =====================================================================
 if "resultado_dre" in st.session_state:
-    res = DREReportSynvitta.model_validate(st.session_state["resultado_dre"])
-    lr, lp = res.lucro_real, res.lucro_presumido
-
-    st.info(f"💡 **Recomendação Fiscal:** {res.regime_recomendado}")
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Receita Bruta Total", f"R$ {lr.receita_bruta_total_brl:,.2f}")
-    c2.metric("Lucro Líquido (Lucro Real)", f"R$ {lr.lucro_liquido_brasil_brl:,.2f}", f"Margem: {lr.margem_liquida_pct:.1f}%")
-    c3.metric("Lucro Líquido (Lucro Presumido)", f"R$ {lp.lucro_liquido_brasil_brl:,.2f}", f"Margem: {lp.margem_liquida_pct:.1f}%")
-    diff = lr.lucro_liquido_brasil_brl - lp.lucro_liquido_brasil_brl
-    c4.metric("Vantagem do Lucro Real", f"R$ {diff:,.2f}", delta=f"{diff:,.2f}")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    t1, t2, t3, t4 = st.tabs(["📊 Comparativo DRE", "📦 Análise por Produto", "🇺🇸 Fluxo EUA", "📥 Exportação & Downloads"])
-
-    with t1:
-        st.subheader("DRE Detalhada Comparativa (BRL)")
-        df_comp = pd.DataFrame({
-            "Etapa DRE": [
-                "Receita Bruta Total", "(-) Impostos sobre Vendas", "(=) Receita Líquida",
-                "(-) CMV (Ajustado)", "(=) Lucro Bruto", "(-) Opex Fixo",
-                "(-) Operação Variável", "(=) EBITDA", "(-) IRPJ / CSLL", "(=) Lucro Líquido Brasil"
-            ],
-            "Lucro Real": [
-                lr.receita_bruta_total_brl, lr.tributos_venda_total_brl, lr.receita_liquida_total_brl,
-                lr.cmv_total_brl, lr.lucro_bruto_total_brl, lr.opex_fixo_brl,
-                lr.operacao_variavel_brl, lr.ebitda_brl, lr.irpj_csll_brl, lr.lucro_liquido_brasil_brl
-            ],
-            "Lucro Presumido": [
-                lp.receita_bruta_total_brl, lp.tributos_venda_total_brl, lp.receita_liquida_total_brl,
-                lp.cmv_total_brl, lp.lucro_bruto_total_brl, lp.opex_fixo_brl,
-                lp.operacao_variavel_brl, lp.ebitda_brl, lp.irpj_csll_brl, lp.lucro_liquido_brasil_brl
-            ]
-        })
-        st.dataframe(df_comp.style.format({"Lucro Real": "R$ {:,.2f}", "Lucro Presumido": "R$ {:,.2f}"}), width="stretch")
-
-        fig_bar = px.bar(
-            pd.DataFrame([
-                {"Métrica": "Lucro Bruto", "Valor": lr.lucro_bruto_total_brl, "Regime": "Lucro Real"},
-                {"Métrica": "Lucro Bruto", "Valor": lp.lucro_bruto_total_brl, "Regime": "Lucro Presumido"},
-                {"Métrica": "Lucro Líquido", "Valor": lr.lucro_liquido_brasil_brl, "Regime": "Lucro Real"},
-                {"Métrica": "Lucro Líquido", "Valor": lp.lucro_liquido_brasil_brl, "Regime": "Lucro Presumido"},
-            ]),
-            x="Métrica", y="Valor", color="Regime", barmode="group",
-            color_discrete_map={"Lucro Real": "#0284C7", "Lucro Presumido": "#475569"},
-            title="Comparativo Visual de Lucro (BRL)"
+    if st.session_state.get("assinatura_resultado") != assinatura(cen):
+        st.warning("As entradas foram alteradas. Execute novamente para atualizar os resultados.")
+    else:
+        res = DREReportSynvitta.model_validate(st.session_state["resultado_dre"])
+        lr, lp = res.lucro_real, res.lucro_presumido
+        st.info(res.regime_recomendado)
+        colunas = st.columns(4)
+        colunas[0].metric("Receita Bruta Total", moeda(lp.receita_bruta_total_brl))
+        colunas[1].metric("Lucro Líquido (Lucro Real estimado)", moeda(lr.lucro_liquido_brasil_brl))
+        colunas[2].metric("Lucro Líquido (Lucro Presumido)", moeda(lp.lucro_liquido_brasil_brl))
+        colunas[3].metric(
+            "Diferença a favor do Real", moeda(lr.lucro_liquido_brasil_brl - lp.lucro_liquido_brasil_brl)
         )
-        fig_bar.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_family="Inter",
-            font_color="#0F172A"
-        )
-        st.plotly_chart(fig_bar, width="stretch")
-
-    with t2:
-        st.subheader("Margem de Contribuição por Produto (Lucro Real)")
-        if lr.itens_produtos:
-            df_p = pd.DataFrame([p.model_dump() for p in lr.itens_produtos])
-            st.dataframe(df_p.style.format({
-                "receita_bruta_brl": "R$ {:,.2f}",
-                "tributos_venda_brl": "R$ {:,.2f}",
-                "receita_liquida_brl": "R$ {:,.2f}",
-                "cmv_brl": "R$ {:,.2f}",
-                "lucro_bruto_brl": "R$ {:,.2f}",
-                "margem_contribucao_pct": "{:.2f}%"
-            }), width="stretch")
-
-    with t3:
-        st.subheader("Distribuição de Resultados: Matriz EUA vs. Filial SP")
-        c_eua, c_sp = st.columns(2)
-        c_eua.metric("Remessa Líquida à Matriz (75%)", f"R$ {lr.remessa_matriz_eua_brl:,.2f}")
-        c_sp.metric("Lucro Retido Filial SP (25%)", f"R$ {lr.lucro_retido_filial_sp_brl:,.2f}")
-
-    with t4:
-        st.subheader("📥 Exportação dos Resultados")
-        col_ex, col_js = st.columns(2)
-
-        excel_data = gerar_excel_bytes(res)
-        col_ex.download_button(
-            label="📊 Baixar Relatório em Excel (.xlsx)",
-            data=excel_data,
-            file_name="synvitta3_report_executivo.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            width="stretch"
-        )
-
-        json_bytes = res.model_dump_json(indent=2).encode("utf-8")
-        col_js.download_button(
-            label="📄 Baixar JSON do Relatório",
-            data=json_bytes,
-            file_name="synvitta3_report_executivo.json",
-            mime="application/json",
-            width="stretch"
-        )
+        t1, t2, t3, t4, t5 = st.tabs([
+            "📊 Comparativo DRE", "📦 Análise por Produto", "🇺🇸 Fluxo EUA",
+            "📥 Exportação & Downloads", "Memória de cálculo",
+        ])
+        with t1:
+            st.subheader("DRE trimestral estimada (BRL)")
+            st.dataframe(
+                tabela_dre(res).style.format({
+                    "Lucro Real estimado": moeda, "Lucro Presumido": moeda,
+                }), width="stretch",
+            )
+            st.plotly_chart(px.bar(
+                pd.DataFrame([
+                    {"Regime": r.regime_tributario, "Lucro Líquido (BRL)": r.lucro_liquido_brasil_brl}
+                    for r in (lr, lp)
+                ]),
+                x="Regime", y="Lucro Líquido (BRL)", color="Regime",
+            ), width="stretch")
+        with t2:
+            regime = st.radio("Regime", ["Lucro Presumido", "Lucro Real estimado"], horizontal=True)
+            dados = lp if regime == "Lucro Presumido" else lr
+            st.dataframe(pd.DataFrame([
+                p.model_dump() for p in dados.itens_produtos
+            ]), width="stretch")
+        with t3:
+            st.caption("Remessa do lucro brasileiro; não inclui fabricação, lucro ou tributos nos EUA.")
+            for dados in (lp, lr):
+                st.subheader(dados.regime_tributario)
+                cols = st.columns(3)
+                cols[0].metric("Remessa líquida à matriz", moeda(dados.remessa_matriz_eua_brl))
+                cols[1].metric("Lucro atribuído aos sócios locais", moeda(dados.parcela_socios_locais_brl))
+                cols[2].metric(
+                    "Parcela local / receita bruta", f"{dados.margem_socios_locais_pct:.2f}%"
+                )
+        with t4:
+            st.download_button(
+                "📊 Baixar Relatório em Excel (.xlsx)", gerar_excel_bytes(res),
+                "synvitta3_report_executivo.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                width="stretch",
+            )
+            st.download_button(
+                "📄 Baixar JSON do Relatório", res.model_dump_json(indent=2),
+                "synvitta3_report_executivo.json", "application/json", width="stretch",
+            )
+        with t5:
+            st.dataframe(pd.DataFrame([
+                p.model_dump() for p in res.landed_cost.produtos
+            ]), width="stretch")
+            for aviso in res.avisos:
+                st.write("- " + aviso)
+            st.caption(
+                "VA = mercadoria + fretes + seguro + parcelas documentadas; II = VA × alíquota; "
+                "IPI = (VA + II) × alíquota; PIS/Cofins-importação = VA × alíquota. "
+                "ICMS por dentro = base antes do ICMS / (1 − alíquota). "
+                "CMV = custo bruto − créditos recuperáveis; receita líquida = bruta − tributos de venda; "
+                "lucro líquido = receita líquida − CMV − despesas − IRPJ/CSLL."
+            )
